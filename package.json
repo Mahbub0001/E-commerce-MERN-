@@ -1,0 +1,17 @@
+{
+  "name": "novamart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NovaMart MERN e-commerce monorepo",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "seed": "npm run seed --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "mongodb": "^7.2.0"
+  }
+}

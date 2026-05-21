@@ -1,0 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-slate-200 dark:border-slate-800;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-mist text-slate-950 antialiased transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
+@layer components {
+  .container-pad {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass-panel {
+    @apply border border-white/50 bg-white/75 shadow-premium backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/70;
+  }
+
+  .gradient-button {
+    @apply bg-gradient-to-r from-brand-600 via-violet-600 to-fuchsia-600 text-white shadow-glow transition hover:-translate-y-0.5 hover:shadow-premium active:translate-y-0;
+  }
+
+  .btn-glow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+    transition: transform 0.55s ease;
+  }
+
+  .btn-glow:hover::after {
+    transform: translateX(120%);
+  }
+}
