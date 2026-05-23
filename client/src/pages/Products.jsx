@@ -61,7 +61,7 @@ function FilterPanel({ filters, setFilters, clearFilters, categories, maxPrice }
       <div>
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Max Price</p>
-          <span className="text-sm font-black">${filters.priceRange}</span>
+          <span className="text-sm font-black">৳{filters.priceRange}</span>
         </div>
         <input
           type="range"
@@ -72,8 +72,8 @@ function FilterPanel({ filters, setFilters, clearFilters, categories, maxPrice }
           className="w-full accent-brand-600"
         />
         <div className="mt-2 flex justify-between text-xs font-bold text-slate-500">
-          <span>$0</span>
-          <span>${maxPrice}</span>
+          <span>৳0</span>
+          <span>৳{maxPrice}</span>
         </div>
       </div>
 
@@ -348,8 +348,8 @@ export default function Products() {
                   </div>
                   <p className="mt-5 leading-7 text-slate-600 dark:text-slate-300">{quickView.description}</p>
                   <div className="mt-6 flex items-end gap-3">
-                    <span className="text-4xl font-black">${quickView.price}</span>
-                    <span className="text-lg text-slate-400 line-through">${quickView.oldPrice}</span>
+                    <span className="text-4xl font-black">৳{quickView.price}</span>
+                    <span className="text-lg text-slate-400 line-through">৳{quickView.oldPrice}</span>
                   </div>
                 </div>
               </div>
