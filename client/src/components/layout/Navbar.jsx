@@ -70,7 +70,7 @@ export default function Navbar() {
     const timer = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const { data } = await api.get("/products/search", { params: { keyword: trimmedQuery } });
+        const { data } = await api.get("/api/products/search", { params: { keyword: trimmedQuery } });
         const rows = (data?.data || []).map(normalizeProduct).slice(0, 6);
         setSuggestions(rows);
       } catch {

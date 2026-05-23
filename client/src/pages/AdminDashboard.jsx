@@ -19,9 +19,9 @@ export default function AdminDashboard() {
     setError("");
     try {
       const [productsRes, ordersRes, usersRes] = await Promise.all([
-        api.get("/products", { params: { limit: 200 } }),
-        api.get("/orders"),
-        api.get("/users"),
+        api.get("/api/products", { params: { limit: 200 } }),
+        api.get("/api/orders"),
+        api.get("/api/users"),
       ]);
 
       setProducts(productsRes.data?.data?.products || []);

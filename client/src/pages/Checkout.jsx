@@ -99,7 +99,7 @@ export default function Checkout() {
 
     try {
       const orderItems = items.map((item) => ({ product: item._id, quantity: item.quantity }));
-      const { data } = await api.post("/orders", {
+      const { data } = await api.post("/api/orders", {
         orderItems,
         shippingAddress,
         paymentMethod,

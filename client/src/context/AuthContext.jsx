@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
       throw new Error("Email and password required.");
     }
 
-    const { data } = await api.post("/auth/login", { email, password });
+    const { data } = await api.post("/api/auth/login", { email, password });
     const nextUser = data?.data ?? data;
     saveSession(nextUser, nextUser.token, rememberMe);
     return nextUser;
@@ -43,14 +43,14 @@ export function AuthProvider({ children }) {
       throw new Error("Name, email, and password required.");
     }
 
-    const { data } = await api.post("/auth/register", { name, email, password });
+    const { data } = await api.post("/api/auth/register", { name, email, password });
     const nextUser = data?.data ?? data;
     saveSession(nextUser, nextUser.token, true);
     return nextUser;
   }
 
   async function refreshProfile() {
-    const { data } = await api.get("/auth/profile");
+    const { data } = await api.get("/api/auth/profile");
     const profile = data?.data ?? data;
     setUser(profile);
     if (localStorage.getItem("novamart_user")) {

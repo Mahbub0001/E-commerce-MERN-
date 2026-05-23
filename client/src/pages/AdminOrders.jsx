@@ -26,7 +26,7 @@ export default function AdminOrders() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/orders");
+      const { data } = await api.get("/api/orders");
       setOrders(data?.data || []);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load orders.");
@@ -41,7 +41,7 @@ export default function AdminOrders() {
 
   async function changeStatus(orderId, status) {
     try {
-      await api.put(`/orders/${orderId}/status`, { status });
+      await api.put(`/api/orders/${orderId}/status`, { status });
       setOrders((prev) => prev.map((order) => order._id === orderId ? { ...order, status } : order));
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update status.");

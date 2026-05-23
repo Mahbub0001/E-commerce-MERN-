@@ -40,7 +40,7 @@ export default function AdminProducts() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/products", { params: { limit: 300, sort: "newest" } });
+      const { data } = await api.get("/api/products", { params: { limit: 300, sort: "newest" } });
       setProducts(data?.data?.products || []);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load products.");
@@ -132,9 +132,9 @@ export default function AdminProducts() {
       };
 
       if (editing) {
-        await api.put(`/products/${editing._id}`, payload);
+        await api.put(`/api/products/${editing._id}`, payload);
       } else {
-        await api.post("/products", payload);
+        await api.post("/api/products", payload);
       }
 
       setShowModal(false);
@@ -151,7 +151,7 @@ export default function AdminProducts() {
     if (!ok) return;
 
     try {
-      await api.delete(`/products/${productId}`);
+      await api.delete(`/api/products/${productId}`);
       await fetchProducts();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to delete product.");

@@ -24,7 +24,7 @@ export default function Profile() {
         const profile = await refreshProfile();
         setForm({ name: profile?.name || "", email: profile?.email || "" });
 
-        const { data } = await api.get("/orders/my-orders");
+        const { data } = await api.get("/api/orders/my-orders");
         const orders = data?.data || [];
         const spent = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
         const processing = orders.filter((order) => order.status === "Processing").length;
@@ -50,7 +50,7 @@ export default function Profile() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await api.put("/auth/profile", { name: form.name, email: form.email });
+      const { data } = await api.put("/api/auth/profile", { name: form.name, email: form.email });
       const updated = data?.data || data;
       await refreshProfile();
       setForm({ name: updated.name, email: updated.email });

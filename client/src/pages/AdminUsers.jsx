@@ -18,7 +18,7 @@ export default function AdminUsers() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/users");
+      const { data } = await api.get("/api/users");
       setUsers(data?.data || []);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load users.");
