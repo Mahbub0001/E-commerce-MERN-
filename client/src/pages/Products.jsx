@@ -141,7 +141,7 @@ export default function Products() {
       if (filters.priceRange > 0) params.maxPrice = filters.priceRange;
       if (filters.rating > 0) params.rating = filters.rating;
 
-      const { data } = await api.get("/products", { params });
+      const { data } = await api.get("/api/products", { params });
       const payload = data?.data || {};
       const rows = (payload.products || []).map(normalizeProduct);
       setProducts(rows);
