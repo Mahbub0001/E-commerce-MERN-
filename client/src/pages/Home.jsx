@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
 import SectionHeader from "../components/common/SectionHeader";
+import FlashSaleCountdown from "../components/home/FlashSaleCountdown";
 import ProductCard from "../components/product/ProductCard";
 import { sampleProducts } from "../data/sampleProducts";
 import { formatCurrency } from "../utils/formatCurrency";
@@ -228,21 +229,11 @@ export default function Home() {
                   <Timer size={16} /> Flash Sale
                 </p>
                 <h2 className="mt-5 text-3xl font-black sm:text-5xl">Save up to 45% before midnight</h2>
-                <p className="mt-4 max-w-2xl text-white/75">Limited-time deals on customer favorites. Countdown UI ready for backend sale timers later.</p>
+                <p className="mt-4 max-w-2xl text-white/75">
+                  Limited-time deals on customer favorites.
+                </p>
               </div>
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  ["08", "Hours"],
-                  ["24", "Mins"],
-                  ["37", "Secs"],
-                  ["99", "Left"],
-                ].map(([value, label]) => (
-                  <div key={label} className="rounded-2xl bg-white/15 p-4 text-center backdrop-blur">
-                    <p className="text-2xl font-black sm:text-3xl">{value}</p>
-                    <p className="mt-1 text-xs font-bold uppercase text-white/70">{label}</p>
-                  </div>
-                ))}
-              </div>
+              <FlashSaleCountdown />
             </div>
           </div>
         </Reveal>
