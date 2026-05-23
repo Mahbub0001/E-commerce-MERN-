@@ -59,10 +59,10 @@ export default function ProductDetails() {
     try {
       let data;
       try {
-        const byId = await api.get(`/api/products/${id}`);
+        const byId = await api.get(`/products/${id}`);
         data = byId.data?.data;
       } catch {
-        const bySlug = await api.get(`/api/products/slug/${id}`);
+        const bySlug = await api.get(`/products/slug/${id}`);
         data = bySlug.data?.data;
       }
 
@@ -71,7 +71,7 @@ export default function ProductDetails() {
       setQuantity(1);
       setActiveImage(0);
 
-      const relatedRes = await api.get("/api/products", {
+      const relatedRes = await api.get("/products", {
         params: { category: normalized.category, limit: 4, sort: "newest" },
       });
       const relatedRows = (relatedRes.data?.data?.products || [])

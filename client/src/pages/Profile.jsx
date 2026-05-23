@@ -24,7 +24,7 @@ export default function Profile() {
         const profile = await refreshProfile();
         setForm({ name: profile?.name || "", email: profile?.email || "" });
 
-        const { data } = await api.get("/api/orders/my-orders");
+        const { data } = await api.get("/orders/my-orders");
         const orders = data?.data || [];
         const spent = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
         const processing = orders.filter((order) => order.status === "Processing").length;
