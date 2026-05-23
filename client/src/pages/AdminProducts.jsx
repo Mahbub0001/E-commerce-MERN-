@@ -4,6 +4,10 @@ import AdminShell from "../components/admin/AdminShell";
 import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
 import api from "../services/api";
+import {
+  compressImageForUpload,
+  isPayloadTooLargeForVercel,
+} from "../utils/compressImage";
 import { formatCurrency } from "../utils/formatCurrency";
 
 const initialForm = {
@@ -90,43 +94,23 @@ export default function AdminProducts() {
     setShowModal(true);
   }
 
-  function handleImageChange(e) {
+  async function handleImageChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Compress image before converting to base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-
-        // Resize if larger than 800px
-        if (width > 800 || height > 800) {
-          const ratio = Math.min(800 / width, 800 / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to base64 with quality 0.75
-        const base64String = canvas.toDataURL("image/jpeg", 0.75);
-        setForm((p) => ({
-          ...p,
-          imageFile: file,
-          image: base64String,
-          imagePreview: base64String,
-        }));
-      };
-      img.src = event.target?.result;
-    };
-    reader.readAsDataURL(file);
+    setError("");
+    try {
+      const base64String = await compressImageForUpload(file);
+      setForm((p) => ({
+        ...p,
+        imageFile: file,
+        image: base64String,
+        imagePreview: base64String,
+      }));
+    } catch (err) {
+      setError(err?.message || "Failed to process image.");
+      e.target.value = "";
+    }
   }
 
   async function submitProduct(event) {
@@ -152,6 +136,18 @@ export default function AdminProducts() {
         isFeatured: form.isFeatured,
       };
 
+      if (!payload.image) {
+        setError("Please upload a product image.");
+        return;
+      }
+
+      if (isPayloadTooLargeForVercel(payload)) {
+        setError(
+          "Product data is too large to upload. Use a smaller image or shorten the description."
+        );
+        return;
+      }
+
       if (editing) {
         await api.put(`/api/products/${editing._id}`, payload);
       } else {
@@ -161,7 +157,15 @@ export default function AdminProducts() {
       setShowModal(false);
       await fetchProducts();
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to save product.");
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || err?.message || "";
+      if (status === 413 || /entity too large|payload too large/i.test(message)) {
+        setError(
+          "Upload is too large for the server (Vercel limit ~4.5MB). Use a smaller image—the app will compress it automatically on retry."
+        );
+      } else {
+        setError(message || "Failed to save product.");
+      }
     } finally {
       setSaving(false);
     }
@@ -283,7 +287,9 @@ export default function AdminProducts() {
                     <label className="flex flex-col items-center justify-center cursor-pointer rounded-xl border-2 border-blue-300 bg-blue-100/50 px-6 py-8 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/15 dark:hover:bg-blue-500/20 flex-1">
                       <Upload size={32} className="mb-2 text-blue-600 dark:text-blue-400" />
                       <span className="font-semibold text-slate-700 dark:text-slate-200">Click to upload or drag & drop</span>
-                      <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, WebP (max 5MB)</span>
+                      <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        PNG, JPG, WebP — auto-compressed for upload (max 10MB file)
+                      </span>
                       <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </label>
                     {form.imagePreview && (
