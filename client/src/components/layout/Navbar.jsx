@@ -128,7 +128,7 @@ export default function Navbar() {
           <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-brand-600 to-fuchsia-600 text-lg font-black text-white shadow-glow">
             N
           </span>
-          <span className="text-lg font-black tracking-tight sm:text-xl">Nuha Mart</span>
+          <span className="text-lg font-black tracking-tight sm:text-xl">Nova Mart</span>
         </Link>
 
         <nav className="hidden items-center gap-2 lg:flex">
