@@ -1,7 +1,9 @@
 # 🛍️ NovaMart - Premium E-Commerce Platform
 ##live link- https://nibir-bhuiyan-ecommerce-projects.vercel.app/
 
-> A modern, full-stack e-commerce application built with the MERN stack, featuring advanced product discovery, secure authentication, and comprehensive admin management tools.
+> A modern, full-stack e-commerce application built with the MERN stack, featuring advanced product discovery, secure authentication, a catalog-aware NovaBot shopping assistant, and comprehensive admin management tools.
+
+**Website name:** Nova Mart
 
 ![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat-square&logo=node.js)
 ![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react)
@@ -22,6 +24,7 @@
 - 💳 **Checkout System** - Secure order creation with shipping address and payment methods
 - 📦 **Order Tracking** - View order history and current status
 - 👨‍💼 **User Profile** - Manage personal information and preferences
+- 🤖 **NovaBot Shopping Assistant** - Floating chatbot that understands catalog data, answers product questions, suggests products by need or budget, and handles website authority questions
 - 🌓 **Dark Mode** - Beautiful light and dark theme support
 - ✨ **Smooth Animations** - Framer Motion powered page transitions and interactions
 
@@ -88,6 +91,7 @@ NovaMart/
 │   │   ├── 📂 components/       # Reusable React components
 │   │   │   ├── common/          # Button, EmptyState, PageTransition
 │   │   │   ├── layout/          # Navbar, Footer, Layout shells
+│   │   │   ├── assistant/       # NovaBot floating shopping assistant
 │   │   │   ├── product/         # ProductCard, ProductFilters
 │   │   │   ├── cart/            # CartItem component
 │   │   │   └── admin/           # Admin-specific components
@@ -217,8 +221,10 @@ JWT_SECRET=your-super-secret-jwt-key-change-this
 **Client Configuration** (`client/.env` - optional)
 ```env
 # API Server URL
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000
 ```
+
+The client normalizes this value, so a legacy value ending in `/api` will still work, but the recommended base URL is the server origin without `/api`.
 
 #### 3️⃣ Seed Database (Optional)
 ```bash
@@ -593,6 +599,17 @@ Authorization: Bearer <admin-token>
 | **Admin Products** | CRUD operations with rich form |
 | **Admin Orders** | Order search, status updates, fulfillment tracking |
 | **Admin Users** | User listing and management |
+| **Global Layout** | Navbar, footer, floating NovaBot assistant, theme-aware shell |
+
+### NovaBot Shopping Assistant
+- **Floating chat entry point**: Sticky bottom-right button available across customer pages
+- **Catalog-aware product answers**: Reads live `/api/products` data and falls back to sample products when the API is unavailable
+- **Smart recommendation logic**: Handles lowest valid price, highest price, best-rated products, category matches, use-case suggestions, and budget-based recommendations
+- **Interactive product cards**: Displays suggested products with image, price, rating, product page link, and add-to-cart action
+- **Authority answers**: Responds to questions like "who created you?", "who owns the website?", and "what is the name of the website?"
+- **Known identity facts**: Creator/owner is Mahbub Ul Alam Bhuiyan, an EdTech engineer from UFTB; website name is Nova Mart
+- **Chat cleanup**: Shows a delete icon when hovering previous chat messages so shoppers can remove old messages
+- **No external AI key required**: Runs as a deterministic, frontend catalog assistant without third-party AI API dependency
 
 ### State Management
 - **React Context API** for global state
@@ -723,6 +740,12 @@ JWT_SECRET=                   # Secret key for JWT tokens
 CORS_ORIGIN=http://localhost:5173
 ```
 
+### Client (.env)
+```env
+# Backend server origin. Do not include `/api` in new setups.
+VITE_API_URL=http://localhost:5000
+```
+
 ---
 
 ## 🐛 Troubleshooting
@@ -732,6 +755,9 @@ CORS_ORIGIN=http://localhost:5173
 
 ### Issue: CORS Errors
 - **Solution**: Ensure frontend URL matches CORS_ORIGIN in server, or adjust cors middleware
+
+### Issue: Product API Requests Show `/api/api/products`
+- **Solution**: Set `client/.env` to `VITE_API_URL=http://localhost:5000`. The Axios client also normalizes legacy values ending in `/api`.
 
 ### Issue: JWT Token Invalid
 - **Solution**: Clear localStorage/sessionStorage, log out and login again
@@ -763,10 +789,12 @@ This project is licensed under the **MIT License** - see the LICENSE file for de
 
 ## 👨‍💻 Author
 
-**NovaMart Development Team**
+**Mahbub Ul Alam Bhuiyan**
+
+EdTech engineer from UFTB and creator/owner of Nova Mart.
 
 ### Support
-For issues, questions, or suggestions, please open a GitHub issue or contact the development team.
+For issues, questions, or suggestions, please open a GitHub issue or contact Mahbub Ul Alam Bhuiyan.
 
 ---
 
@@ -774,12 +802,11 @@ For issues, questions, or suggestions, please open a GitHub issue or contact the
 
 ### Upcoming Features
 - 🎤 Product reviews and ratings system
-- 💬 Real-time chat support
 - 📧 Email notifications for orders
 - 🎁 Coupon and discount codes
 - 📱 Mobile app version
 - 🌍 Multi-language support
-- 🏷️ Advanced product recommendations
+- 🏷️ AI-assisted product bundles and comparison flows
 - 📊 Analytics dashboard for admins
 
 ---
@@ -800,6 +827,6 @@ Built with ❤️ using:
 
 **[⬆ Back to top](#-novamart---premium-e-commerce-platform)**
 
-Made with ❤️ by the NovaMart Team
+Made with ❤️ by Mahbub Ul Alam Bhuiyan
 
 </div>
