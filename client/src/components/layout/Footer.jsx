@@ -1,6 +1,14 @@
 import { Facebook, Github, Instagram, Mail, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const socialLinks = [
+  { label: "Instagram", href: "https://www.instagram.com/nibir_bhuiyan_25/", Icon: Instagram },
+  { label: "Facebook", href: "https://www.facebook.com/Nibir.bhuiyan40", Icon: Facebook },
+  { label: "Twitter", href: "https://twitter.com/", Icon: Twitter },
+  { label: "GitHub", href: "https://github.com/Mahbub0001", Icon: Github },
+  { label: "Email", href: "nibirbhuiyan18@gmail.com", Icon: Mail },
+];
+
 export default function Footer() {
   const company = ["About", "Careers", "Press", "Affiliates"];
   const support = ["Help Center", "Shipping", "Returns", "Privacy"];
@@ -12,10 +20,17 @@ export default function Footer() {
           <p className="text-2xl font-black text-slate-950 dark:text-white">NovaMart</p>
           <p className="mt-3 max-w-sm leading-6">Premium shopping UI for lifestyle products, daily essentials, and modern digital commerce.</p>
           <div className="mt-5 flex items-center gap-3">
-            {[Instagram, Facebook, Twitter, Github, Mail].map((Icon, index) => (
-              <span key={index} className="rounded-full border bg-white p-3 text-slate-700 transition hover:-translate-y-1 hover:text-brand-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200">
+            {socialLinks.map(({ label, href, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className="rounded-full border bg-white p-3 text-slate-700 transition hover:-translate-y-1 hover:text-brand-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+              >
                 <Icon size={18} />
-              </span>
+              </a>
             ))}
           </div>
         </div>
