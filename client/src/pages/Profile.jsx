@@ -65,7 +65,7 @@ export default function Profile() {
 
   const summaryCards = [
     { id: "orders", label: "Orders", value: String(summary.orders), icon: PackageCheck },
-    { id: "spent", label: "Total spent", value: `$${summary.spent.toFixed(2)}`, icon: Shield },
+    { id: "spent", label: "Total spent", value: `৳${summary.spent.toFixed(2)}`, icon: Shield },
     { id: "processing", label: "Processing", value: String(summary.processing), icon: User },
   ];
 
