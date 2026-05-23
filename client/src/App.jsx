@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -19,6 +20,7 @@ export default function App() {
               <AnimatePresence mode="wait" initial={false}>
                 <AppRoutes key={location.pathname} />
               </AnimatePresence>
+              <Analytics />
             </WishlistProvider>
           </CartProvider>
         </AuthProvider>
