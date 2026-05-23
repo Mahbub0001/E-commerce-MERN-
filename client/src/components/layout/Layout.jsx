@@ -3,9 +3,9 @@ import Navbar from "./Navbar";
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen">
       <Navbar />
-      {children}
+      <main className="overflow-x-hidden">{children}</main>
       <Footer />
     </div>
   );

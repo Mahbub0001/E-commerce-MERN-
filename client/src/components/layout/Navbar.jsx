@@ -119,7 +119,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b border-white/50 bg-white/80 backdrop-blur-2xl transition-shadow duration-300 dark:border-white/10 dark:bg-slate-950/75 ${
+      className={`sticky top-0 z-[100] border-b border-white/50 bg-white/90 backdrop-blur-2xl transition-shadow duration-300 dark:border-white/10 dark:bg-slate-950/90 ${
         scrolled ? "shadow-[0_18px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.35)]" : ""
       }`}
     >
