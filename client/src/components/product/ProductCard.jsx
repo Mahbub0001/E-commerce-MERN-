@@ -3,12 +3,16 @@ import { Eye, Heart, ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
+import { formatCurrency } from "../../utils/formatCurrency";
 
 export default function ProductCard({ product, onQuickView }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const wished = isWishlisted(product._id);
-  const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+  const discount =
+    product.oldPrice > product.price
+      ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+      : 0;
 
   return (
     <motion.article
@@ -19,9 +23,11 @@ export default function ProductCard({ product, onQuickView }) {
       <Link to={`/products/${product._id}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
           <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
-          <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-brand-700 backdrop-blur">
-            {discount}% OFF
-          </span>
+          {discount > 0 && (
+            <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-brand-700 backdrop-blur">
+              {discount}% OFF
+            </span>
+          )}
           <span className="absolute right-4 top-4 rounded-full bg-slate-950/85 px-3 py-1 text-xs font-black text-white backdrop-blur">
             {product.badge}
           </span>
@@ -53,8 +59,10 @@ export default function ProductCard({ product, onQuickView }) {
         </div>
         <div className="mt-5 flex items-center justify-between">
           <div>
-            <span className="text-2xl font-black">${product.price}</span>
-            <span className="ml-2 text-sm text-slate-400 line-through">${product.oldPrice}</span>
+            <span className="text-2xl font-black">{formatCurrency(product.price)}</span>
+            {product.oldPrice > product.price && (
+              <span className="ml-2 text-sm text-slate-400 line-through">{formatCurrency(product.oldPrice)}</span>
+            )}
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}

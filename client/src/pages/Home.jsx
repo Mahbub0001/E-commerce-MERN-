@@ -22,6 +22,7 @@ import PageTransition from "../components/common/PageTransition";
 import SectionHeader from "../components/common/SectionHeader";
 import ProductCard from "../components/product/ProductCard";
 import { sampleProducts } from "../data/sampleProducts";
+import { formatCurrency } from "../utils/formatCurrency";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -45,9 +46,9 @@ const reasons = [
 ];
 
 const floatingCards = [
-  { name: "NovaPods Max", price: "$189", image: sampleProducts[0].image, className: "left-3 top-10 sm:left-8" },
-  { name: "PulseFit Pro", price: "$129", image: sampleProducts[1].image, className: "right-2 top-32 sm:right-8" },
-  { name: "NovaStation X", price: "$499", image: sampleProducts[4].image, className: "bottom-8 left-12 sm:left-24" },
+  { name: "NovaPods Max", price: 189, image: sampleProducts[0].image, className: "left-3 top-10 sm:left-8" },
+  { name: "PulseFit Pro", price: 129, image: sampleProducts[1].image, className: "right-2 top-32 sm:right-8" },
+  { name: "NovaStation X", price: 499, image: sampleProducts[4].image, className: "bottom-8 left-12 sm:left-24" },
 ];
 
 function Reveal({ children, className = "", delay = 0 }) {
@@ -149,7 +150,7 @@ export default function Home() {
                   <img src={card.image} alt={card.name} className="h-14 w-14 rounded-2xl object-cover" />
                   <div>
                     <p className="line-clamp-1 text-sm font-black">{card.name}</p>
-                    <p className="text-sm font-bold text-brand-600 dark:text-brand-100">{card.price}</p>
+                    <p className="text-sm font-bold text-brand-600 dark:text-brand-100">{formatCurrency(card.price)}</p>
                   </div>
                 </div>
               </motion.div>

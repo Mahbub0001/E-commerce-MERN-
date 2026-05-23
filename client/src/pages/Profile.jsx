@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import { formatCurrency } from "../utils/formatCurrency";
 
 export default function Profile() {
   const { user, logout, refreshProfile } = useAuth();
@@ -65,7 +66,7 @@ export default function Profile() {
 
   const summaryCards = [
     { id: "orders", label: "Orders", value: String(summary.orders), icon: PackageCheck },
-    { id: "spent", label: "Total spent", value: `$${summary.spent.toFixed(2)}`, icon: Shield },
+    { id: "spent", label: "Total spent", value: formatCurrency(summary.spent), icon: Shield },
     { id: "processing", label: "Processing", value: String(summary.processing), icon: User },
   ];
 
