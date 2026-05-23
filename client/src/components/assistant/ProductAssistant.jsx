@@ -139,7 +139,7 @@ function getRecommendationText(picks, budget, matchedCategory) {
 function getAuthorityReply(text) {
   const lower = text.toLowerCase();
   const asksOwner =
-    /(who|what).*(made|created|built|developed|owner|authority|founder)/i.test(lower) ||
+    /(who|what).*(discover|invented|made|created|built|developed|owner|authority|founder)/i.test(lower) ||
     /(owner|creator|developer|founder|authority).*(bot|website|site|novabot|nova mart|novamart)/i.test(lower);
   const asksSiteName = /(what|which).*(name).*(website|site|shop|store)/i.test(lower) || /(website|site).*(name)/i.test(lower);
 
