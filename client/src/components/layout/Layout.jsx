@@ -1,3 +1,4 @@
+import ProductAssistant from "../assistant/ProductAssistant";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
 
@@ -7,6 +8,7 @@ export default function Layout({ children }) {
       <Navbar />
       <main className="overflow-x-hidden">{children}</main>
       <Footer />
+      <ProductAssistant />
     </div>
   );
 }
