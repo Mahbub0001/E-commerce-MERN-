@@ -1,6 +1,9 @@
+/** Format amounts in Bangladeshi Taka (৳). */
 export function formatCurrency(value) {
-  return new Intl.NumberFormat("bn-BD", {
-    style: "currency",
-    currency: "BDT",
-  }).format(value);
+  const amount = Number(value) || 0;
+  const formatted = amount.toLocaleString("en-BD", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  });
+  return `৳${formatted}`;
 }

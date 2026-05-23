@@ -244,7 +244,7 @@ export default function ProductDetails() {
               </div>
 
               <div className="mt-8 space-y-4 rounded-2xl border border-slate-200/80 bg-white/60 p-4 dark:border-slate-700/80 dark:bg-slate-900/40">
-                <div className="flex gap-3"><Truck size={18} className="mt-1 text-brand-500" /><div><p className="font-bold">Delivery information</p><p className="text-sm text-slate-600 dark:text-slate-300">Free shipping over $250. Standard delivery 3-5 days.</p></div></div>
+                <div className="flex gap-3"><Truck size={18} className="mt-1 text-brand-500" /><div><p className="font-bold">Delivery information</p><p className="text-sm text-slate-600 dark:text-slate-300">Free shipping over {formatCurrency(250)}. Standard delivery 3-5 days.</p></div></div>
                 <div className="flex gap-3"><ShieldCheck size={18} className="mt-1 text-brand-500" /><div><p className="font-bold">Return policy</p><p className="text-sm text-slate-600 dark:text-slate-300">30-day hassle-free returns with instant refund processing.</p></div></div>
               </div>
             </div>

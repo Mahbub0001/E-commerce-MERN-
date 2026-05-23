@@ -81,7 +81,7 @@ export default function Cart() {
           <Button as={Link} to="/checkout" className="mt-6 min-h-12 w-full justify-center">
             Checkout <ArrowRight size={16} />
           </Button>
-          <p className="mt-3 text-xs text-slate-500">Discount auto-applied for orders above $300.</p>
+          <p className="mt-3 text-xs text-slate-500">Discount auto-applied for orders above {formatCurrency(300)}.</p>
         </aside>
       </section>
     </PageTransition>
