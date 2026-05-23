@@ -1,4 +1,5 @@
 # 🛍️ NovaMart - Premium E-Commerce Platform
+##live link- https://nibir-bhuiyan-ecommerce-projects.vercel.app/
 
 > A modern, full-stack e-commerce application built with the MERN stack, featuring advanced product discovery, secure authentication, and comprehensive admin management tools.
 
