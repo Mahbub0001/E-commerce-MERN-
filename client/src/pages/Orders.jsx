@@ -14,7 +14,7 @@ export default function Orders() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/orders/my-orders");
+      const { data } = await api.get("/api/orders/my-orders");
       setOrders(data?.data || []);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load orders.");
