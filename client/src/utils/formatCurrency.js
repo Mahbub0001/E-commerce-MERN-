@@ -1,6 +1,6 @@
 export function formatCurrency(value) {
   return new Intl.NumberFormat("bn-BD", {
     style: "currency",
-    currency: "USD",
+    currency: "BDT",
   }).format(value);
 }
