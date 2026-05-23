@@ -94,16 +94,37 @@ export default function AdminProducts() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Convert to base64
+    // Compress image before converting to base64
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64String = event.target?.result;
-      setForm((p) => ({
-        ...p,
-        imageFile: file,
-        image: base64String,
-        imagePreview: base64String,
-      }));
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Resize if larger than 800px
+        if (width > 800 || height > 800) {
+          const ratio = Math.min(800 / width, 800 / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with quality 0.75
+        const base64String = canvas.toDataURL("image/jpeg", 0.75);
+        setForm((p) => ({
+          ...p,
+          imageFile: file,
+          image: base64String,
+          imagePreview: base64String,
+        }));
+      };
+      img.src = event.target?.result;
     };
     reader.readAsDataURL(file);
   }
