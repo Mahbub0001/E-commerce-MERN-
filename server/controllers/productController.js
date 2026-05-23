@@ -1,5 +1,17 @@
 import Product from "../models/Product.js";
 
+/** Base64 image strings above this often exceed Vercel's ~4.5MB request body limit. */
+const MAX_IMAGE_FIELD_LENGTH = 1_500_000;
+
+function rejectOversizedImage(image, res) {
+  if (typeof image === "string" && image.length > MAX_IMAGE_FIELD_LENGTH) {
+    res.status(413);
+    throw new Error(
+      "Image is too large. Re-upload a smaller file; the admin form compresses images automatically."
+    );
+  }
+}
+
 export async function getProducts(req, res, next) {
   try {
     const page = Math.max(Number(req.query.page) || 1, 1);
@@ -121,6 +133,8 @@ export async function searchProducts(req, res, next) {
 
 export async function createProduct(req, res, next) {
   try {
+    rejectOversizedImage(req.body.image, res);
+
     const product = await Product.create({
       name: req.body.name || "New Product",
       slug: req.body.slug || `new-product-${Date.now()}`,
@@ -147,6 +161,10 @@ export async function createProduct(req, res, next) {
 
 export async function updateProduct(req, res, next) {
   try {
+    if (req.body.image !== undefined) {
+      rejectOversizedImage(req.body.image, res);
+    }
+
     const product = await Product.findById(req.params.id);
     if (!product) {
       res.status(404);
