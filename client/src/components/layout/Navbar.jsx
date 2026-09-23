@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Clock3, Heart, Menu, Moon, Search, ShoppingCart, Sparkles, Sun, User, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import AIShoppingAdvisorModal from "../ai/AIShoppingAdvisorModal";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -25,7 +24,6 @@ const POPULAR_SEARCHES = ["headphones", "smartwatch", "sneakers", "gaming", "bac
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [aiAdvisorOpen, setAiAdvisorOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -149,9 +147,9 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setAiAdvisorOpen(true)}
+            onClick={() => window.dispatchEvent(new CustomEvent("open-novabot"))}
             className="hidden items-center gap-1.5 rounded-full border border-brand-500/30 bg-gradient-to-r from-brand-50 to-indigo-50 px-3.5 py-1.5 text-xs font-black text-brand-700 shadow-sm transition hover:shadow-glow dark:border-brand-400/30 dark:from-brand-950/40 dark:to-indigo-950/40 dark:text-brand-300 sm:inline-flex"
-            title="Ask Nova AI Shopper for instant personalized recommendations"
+            title="Ask NovaBot AI Agent for personalized recommendations and support"
           >
             <Sparkles size={14} className="animate-pulse text-brand-600 dark:text-brand-400" />
             <span>AI Shopper</span>
@@ -199,11 +197,11 @@ export default function Navbar() {
                   type="button"
                   onClick={() => {
                     setOpen(false);
-                    setAiAdvisorOpen(true);
+                    window.dispatchEvent(new CustomEvent("open-novabot"));
                   }}
                   className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-600 via-indigo-600 to-fuchsia-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-95"
                 >
-                  <Sparkles size={16} /> Nova AI Shopping Advisor
+                  <Sparkles size={16} /> NovaBot AI Shopper
                 </button>
                 {[...navItems, ...(isAdmin ? [{ label: "Admin", to: "/admin" }] : []), { label: user ? "Profile" : "Login", to: user ? "/profile" : "/login" }].map((item) => (
                   <NavLink key={item.to} to={item.to} onClick={() => setOpen(false)} className={linkClass}>
@@ -327,11 +325,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <AIShoppingAdvisorModal
-        isOpen={aiAdvisorOpen}
-        onClose={() => setAiAdvisorOpen(false)}
-      />
     </header>
   );
 }

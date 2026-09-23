@@ -263,81 +263,106 @@ export async function processAssistantChat({ message, history = [], user = null 
     }
   }
 
-  // 3. Product Discovery & Recommendations Intent
+  // 3. Product Discovery, Shopping Recommendations & Store Q&A
+  const allProducts = await Product.find(
+    {},
+    "name category brand price rating numReviews tags features description image"
+  ).lean();
+
+  const catalogSummary = allProducts.map((p) => ({
+    id: p._id.toString(),
+    name: p.name,
+    category: p.category,
+    brand: p.brand,
+    price: p.price,
+    rating: p.rating,
+    tags: p.tags || [],
+  }));
+
+  const systemInstruction = `You are "NovaBot", the official Intelligent Shopping Agent for NovaMart (created by Mahbub Ul Alam Bhuiyan).
+NovaMart Information:
+- Categories: Electronics, Fashion, Fitness, Gaming, Home, Accessories, Beauty & Skincare, Audio & Studio, Kitchen & Gourmet, Books & Stationery.
+- Shipping: Free delivery on orders over $250. Standard delivery in 3-5 business days.
+- Returns: 30-day hassle-free return policy with instant refunds.
+- Owner / Developer: Mahbub Ul Alam Bhuiyan (EdTech engineer from UFTB).
+
+Guidelines:
+1. If the user asks general store questions (shipping, returns, creator, payment), answer politely and directly.
+2. If the user wants product recommendations, gifts, setups, or mentions a budget/need, select 1 to 4 best matching products from the Available Catalog below and explain why. Put their IDs in "productIds". If no products are relevant, return "productIds": [].
+3. If the user speaks Bengali or Banglish, reply warmly in natural Bengali. If English, in English.
+4. Output strict JSON:
+{
+  "reply": "Warm, concise, and helpful answer (2-3 sentences)",
+  "productIds": ["id1", "id2"],
+  "tips": ["Helpful tip or bundle advice"]
+}`;
+
+  const prompt = `Conversation History:
+${(history || []).map((h) => `${h.role}: ${h.text}`).join("\n")}
+
+User Query: "${userText}"
+User Info: ${user ? JSON.stringify({ name: user.name, email: user.email }) : "Guest"}
+
+Available Catalog:
+${JSON.stringify(catalogSummary, null, 1)}
+
+Respond in JSON now:`;
+
+  const rawAi = await callGemini(prompt, systemInstruction);
+  const parsed = extractJSON(rawAi);
+
+  const productMap = new Map();
+  allProducts.forEach((p) => productMap.set(p._id.toString(), p));
+
+  if (parsed && typeof parsed.reply === "string") {
+    const matchedProducts = (parsed.productIds || [])
+      .map((id) => productMap.get(id))
+      .filter(Boolean);
+
+    return {
+      reply: parsed.reply,
+      intent: matchedProducts.length > 0 ? "PRODUCT_DISCOVERY" : "STORE_QA",
+      products: matchedProducts,
+      tips: Array.isArray(parsed.tips) ? parsed.tips : [],
+    };
+  }
+
+  // Fallback rule-based discovery if Gemini API is unreachable
   const budgetMatch = lower.match(/(?:under|below|budget|within|kom dame)\s*(?:৳|tk|\$)?\s*(\d+)/i);
   const budget = budgetMatch ? Number(budgetMatch[1]) : null;
 
-  // Search relevant products
-  let query = {};
+  let fallbackCandidates = allProducts;
   if (budget) {
-    query.price = { $lte: budget };
+    fallbackCandidates = fallbackCandidates.filter((p) => p.price <= budget);
   }
 
-  // Check categories
-  const categories = [
-    "Electronics",
-    "Fashion",
-    "Gaming",
-    "Fitness",
-    "Home",
-    "Accessories",
-    "Beauty & Skincare",
-    "Audio & Studio",
-    "Kitchen & Gourmet",
-    "Books & Stationery",
-  ];
-  const matchedCat = categories.find((cat) => lower.includes(cat.toLowerCase().split("&")[0].trim()));
-  if (matchedCat) {
-    query.category = matchedCat;
-  }
+  const qWords = lower.split(/\s+/).filter((w) => w.length > 2);
+  const scored = fallbackCandidates
+    .map((p) => {
+      let score = 0;
+      const haystack = `${p.name} ${p.category} ${(p.tags || []).join(" ")}`.toLowerCase();
+      for (const w of qWords) {
+        if (haystack.includes(w)) score += 3;
+      }
+      score += (p.rating || 0) * 2;
+      return { p, score };
+    })
+    .sort((a, b) => b.score - a.score);
 
-  let products = await Product.find(query).sort({ rating: -1, price: 1 }).limit(4).lean();
-
-  if (!products.length && budget) {
-    products = await Product.find({}).sort({ price: 1 }).limit(3).lean();
-  } else if (!products.length) {
-    products = await Product.find({}).sort({ rating: -1 }).limit(3).lean();
-  }
-
-  // 4. If Gemini API is available, ask Gemini to form an engaging, natural response
-  if (GEMINI_API_KEY) {
-    const productsContext = products
-      .map((p) => `- ${p.name} (৳${p.price}, Rating: ${p.rating}★, Category: ${p.category})`)
-      .join("\n");
-
-    const prompt = `User message: "${userText}"
-
-Catalog Products Available:
-${productsContext}
-
-Respond as "NovaBot", a friendly, knowledgeable e-commerce AI shopping assistant for NovaMart.
-If the user spoke in Bengali/Banglish, reply warmly in natural Bengali. If in English, reply in English.
-Keep the answer concise (2-3 sentences max) highlighting why the suggested products match their need.`;
-
-    const aiReply = await callGemini(
-      prompt,
-      "You are NovaBot, a smart, polite e-commerce assistant for NovaMart. Be helpful, concise, and authentic."
-    );
-
-    if (aiReply) {
-      return {
-        reply: aiReply.trim(),
-        intent: "PRODUCT_DISCOVERY",
-        products,
-      };
-    }
-  }
-
-  // Fallback conversational reply
+  const fallbackPicks = scored.slice(0, 3).map((s) => s.p);
   const isBangla = /[\u0980-\u09FF]|kom|dame|bhalo|pabo/i.test(userText);
-  const fallbackText = isBangla
-    ? `আপনার পছন্দের জন্য সেরা কিছু প্রোডাক্ট নিচে দেওয়া হলো। কোনো নির্দিষ্ট বাজেট বা স্পেসিফিকেশন থাকলে আমাকে জানাতে পারেন!`
-    : `Here are our best recommended picks for you. Let me know if you are looking for a specific category or price range!`;
 
   return {
-    reply: fallbackText,
+    reply: isBangla
+      ? `আপনার পছন্দের জন্য সেরা কিছু প্রোডাক্ট নিচে দেওয়া হলো:`
+      : `Here are our top recommended picks from the NovaMart catalog:`,
     intent: "PRODUCT_DISCOVERY",
-    products,
+    products: fallbackPicks,
+    tips: [
+      isBangla
+        ? "NovaMart-এ ২৫০ ডলারের বেশি অর্ডারে ফ্রি ডেলিভারি পাবেন।"
+        : "Free delivery applies to all orders over $250.",
+    ],
   };
 }
 

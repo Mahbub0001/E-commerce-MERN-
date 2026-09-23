@@ -5,6 +5,7 @@ import {
   LifeBuoy,
   MessageCircle,
   Minus,
+  Package,
   Search,
   Send,
   ShoppingCart,
@@ -22,9 +23,11 @@ import { normalizeProduct } from "../../utils/normalizeProduct";
 
 const starterPrompts = [
   "Lowest price product",
-  "Best gaming item",
-  "Best picks under 500",
-  "Report an issue or refund",
+  "Top picks under $500",
+  "Gift for coffee lover",
+  "Skincare routine items",
+  "Track my order",
+  "Report issue or refund",
 ];
 
 const needMap = [
@@ -224,6 +227,43 @@ function TicketMiniCard({ ticket }) {
   );
 }
 
+function OrderMiniCard({ order }) {
+  const shortId = order._id?.toString().slice(-8).toUpperCase() || order._id;
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-sky-500/20 bg-sky-50/70 p-3.5 text-slate-800 shadow-sm dark:border-sky-500/30 dark:bg-sky-950/40 dark:text-sky-100">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-xl bg-sky-600 text-white shadow-sm">
+            <Package size={15} />
+          </span>
+          <div>
+            <span className="text-xs font-black tracking-wide text-sky-900 dark:text-sky-200">
+              Order #{shortId}
+            </span>
+            <p className="text-[11px] font-semibold text-sky-700/80 dark:text-sky-300/80">
+              Total: {formatCurrency(order.totalPrice || 0)}
+            </p>
+          </div>
+        </div>
+        <span className="rounded-full bg-sky-600/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-sky-700 dark:bg-sky-400/20 dark:text-sky-300">
+          {order.status || "Processing"}
+        </span>
+      </div>
+      <div className="mt-2.5 flex items-center justify-between">
+        <span className="text-[11px] text-sky-800/80 dark:text-sky-200/80">
+          Track shipment in your profile
+        </span>
+        <Link
+          to={`/orders/${order._id}`}
+          className="inline-flex items-center gap-1 text-xs font-black text-sky-700 hover:underline dark:text-sky-300"
+        >
+          View Details <ChevronRight size={13} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function TypingDots() {
   return (
     <div className="flex items-center gap-1 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-white/10">
@@ -249,11 +289,23 @@ export default function ProductAssistant() {
     {
       id: "welcome",
       role: "bot",
-      text: "Hi, I am NovaBot. Ask me for lowest price, best-rated picks, product suggestions, or budget matches.",
+      text: "Hi, I am NovaBot, your intelligent Shopping & Store Agent! I can recommend products, help find gifts, answer questions about shipping/returns, track your orders, or log support complaints.",
       products: sortByValue(sampleProducts.map(normalizeProduct)).slice(0, 2),
     },
   ]);
   const scrollRef = useRef(null);
+  const sendMessageRef = useRef(null);
+
+  useEffect(() => {
+    function handleOpenNovaBot(e) {
+      setOpen(true);
+      if (e.detail?.prompt) {
+        sendMessageRef.current?.(e.detail.prompt);
+      }
+    }
+    window.addEventListener("open-novabot", handleOpenNovaBot);
+    return () => window.removeEventListener("open-novabot", handleOpenNovaBot);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -413,6 +465,7 @@ export default function ProductAssistant() {
             products: normalizedProds,
             ticket: botData.ticket || null,
             order: botData.order || null,
+            tips: botData.tips || [],
           },
         ]);
         setLoading(false);
@@ -429,11 +482,16 @@ export default function ProductAssistant() {
           role: "bot",
           text: reply.text,
           products: reply.products,
+          tips: [],
         },
       ]);
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  });
 
   function deleteMessage(messageId) {
     setMessages((current) => current.filter((message) => message.id !== messageId));
@@ -458,8 +516,8 @@ export default function ProductAssistant() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-base font-black">NovaBot</p>
-                    <p className="line-clamp-1 text-xs font-semibold text-white/70 dark:text-slate-600">
-                      Product-aware shopping assistant
+                    <p className="line-clamp-1 text-xs font-semibold text-white/70 dark:text-slate-400">
+                      Autonomous AI Shopping & Store Agent
                     </p>
                   </div>
                 </div>
@@ -521,7 +579,21 @@ export default function ProductAssistant() {
                         ))}
                       </div>
                     )}
+                    {message.tips?.length > 0 && (
+                      <div className="mt-2.5 rounded-2xl border border-amber-500/20 bg-amber-50/70 p-3 text-xs text-amber-900 shadow-sm dark:border-amber-400/20 dark:bg-amber-950/40 dark:text-amber-200">
+                        <div className="flex items-center gap-1.5 font-black text-amber-800 dark:text-amber-300">
+                          <Sparkles size={13} />
+                          <span>Nova Shopping Tip</span>
+                        </div>
+                        <ul className="mt-1 space-y-1 pl-4 list-disc font-medium text-amber-900/90 dark:text-amber-200/90">
+                          {message.tips.map((tip, idx) => (
+                            <li key={idx}>{tip}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {message.ticket && <TicketMiniCard ticket={message.ticket} />}
+                    {message.order && <OrderMiniCard order={message.order} />}
                   </div>
                 </div>
               ))}
