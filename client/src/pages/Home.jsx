@@ -23,6 +23,7 @@ import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
 import SectionHeader from "../components/common/SectionHeader";
 import FlashSaleCountdown from "../components/home/FlashSaleCountdown";
+import RecommendedShelf from "../components/home/RecommendedShelf";
 import ProductCard from "../components/product/ProductCard";
 import { sampleProducts } from "../data/sampleProducts";
 import { formatCurrency } from "../utils/formatCurrency";
@@ -191,18 +192,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container-pad py-16">
-        <Reveal>
-          <SectionHeader eyebrow="Trending" title="Trending Products" text="Discount badges, ratings, wishlist controls, and animated hover states." />
-        </Reveal>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {trending.map((product, index) => (
-            <Reveal key={product._id} delay={index * 0.05}>
-              <ProductCard product={product} />
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      <Reveal>
+        <RecommendedShelf />
+      </Reveal>
 
       <section className="container-pad py-16">
         <Reveal>

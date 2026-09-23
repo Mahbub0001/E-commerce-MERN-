@@ -4,7 +4,7 @@ import Ticket from "../models/Ticket.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 /**
  * Call Gemini API with structured prompt
@@ -338,5 +338,85 @@ Keep the answer concise (2-3 sentences max) highlighting why the suggested produ
     reply: fallbackText,
     intent: "PRODUCT_DISCOVERY",
     products,
+  };
+}
+
+/**
+ * AI Shopping Advisor for Natural Language Product Recommendations
+ */
+export async function recommendProductsWithAI({ query, products = [], userContext = {} }) {
+  if (!query || typeof query !== "string") {
+    return {
+      summary: "Please let us know what you are looking for!",
+      productIds: [],
+      tips: [],
+    };
+  }
+
+  const catalogSummary = products.map((p) => ({
+    id: p._id.toString(),
+    name: p.name,
+    category: p.category,
+    brand: p.brand,
+    price: p.price,
+    rating: p.rating,
+    tags: p.tags || [],
+  }));
+
+  const systemInstruction = `You are "Nova AI Stylist & Shopping Advisor" for NovaMart.
+Given a user query and a list of available products in the catalog, choose the top 2 to 4 products that BEST match what the user is asking for.
+Output ONLY valid JSON in this format:
+{
+  "summary": "Warm explanation of why these products match, in the same language the user asked (English or Bengali). Keep it friendly and concise (2-3 sentences).",
+  "productIds": ["id1", "id2"],
+  "tips": ["One practical advice or bundle tip for the user"]
+}`;
+
+  const prompt = `User Query: "${query}"
+User Preferences: ${JSON.stringify(userContext)}
+Available Catalog:
+${JSON.stringify(catalogSummary, null, 1)}
+
+Return JSON now:`;
+
+  const aiRaw = await callGemini(prompt, systemInstruction);
+  const parsed = extractJSON(aiRaw);
+
+  if (parsed && Array.isArray(parsed.productIds) && parsed.productIds.length > 0) {
+    return {
+      summary: parsed.summary || "Here are our top curated recommendations for you:",
+      productIds: parsed.productIds,
+      tips: Array.isArray(parsed.tips) ? parsed.tips : [],
+    };
+  }
+
+  // Graceful rule-based fallback if AI is offline or format doesn't match
+  const qLower = query.toLowerCase();
+  const scored = products
+    .map((p) => {
+      let score = 0;
+      const combined = `${p.name} ${p.category} ${(p.tags || []).join(" ")} ${p.description || ""}`.toLowerCase();
+      const words = qLower.split(/\s+/).filter((w) => w.length > 2);
+      for (const w of words) {
+        if (combined.includes(w)) score += 2;
+      }
+      if (p.rating >= 4.7) score += 1;
+      return { id: p._id.toString(), score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const topIds = scored.slice(0, 4).map((s) => s.id);
+  const isBangla = /[\u0980-\u09FF]|kom|dame|bhalo|chai/i.test(query);
+
+  return {
+    summary: isBangla
+      ? "আপনার চাহিদার ওপর ভিত্তি করে সেরা কিছু প্রোডাক্ট বেছে নেওয়া হয়েছে:"
+      : "Based on your request, here are our best handpicked recommendations:",
+    productIds: topIds.length > 0 ? topIds : products.slice(0, 4).map((p) => p._id.toString()),
+    tips: [
+      isBangla
+        ? "এই প্রোডাক্টগুলো একসাথে নিলে স্পেশাল বান্ডেল ডিসকাউন্ট পাবেন।"
+        : "Bundle these products together to enjoy extra savings on checkout.",
+    ],
   };
 }

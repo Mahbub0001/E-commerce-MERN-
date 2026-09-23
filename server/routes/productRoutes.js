@@ -4,11 +4,14 @@ import {
   createProductReview,
   deleteProduct,
   deleteProductReview,
+  getAIShoppingAdvice,
   getAllReviews,
   getFeaturedProducts,
+  getPersonalizedRecommendations,
   getProductById,
   getProductBySlug,
   getProductCategories,
+  getProductRecommendations,
   getProducts,
   searchProducts,
   updateProduct,
@@ -22,6 +25,11 @@ router.get("/categories", getProductCategories);
 router.get("/featured", getFeaturedProducts);
 router.get("/search", searchProducts);
 router.get("/slug/:slug", getProductBySlug);
+
+// Recommendation endpoints (must be before /:id)
+router.get("/recommendations/personalized", getPersonalizedRecommendations);
+router.post("/recommendations/ai-advisor", getAIShoppingAdvice);
+router.get("/:id/recommendations", getProductRecommendations);
 
 // Admin review aggregation (must be before /:id)
 router.get("/reviews/all", protect, adminOnly, getAllReviews);

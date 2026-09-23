@@ -1,5 +1,6 @@
+import Order from "../models/Order.js";
 import Product from "../models/Product.js";
-import { analyzeReviewWithAI } from "../services/aiService.js";
+import { analyzeReviewWithAI, recommendProductsWithAI } from "../services/aiService.js";
 
 /** Base64 image strings above this often exceed Vercel's ~4.5MB request body limit. */
 const MAX_IMAGE_FIELD_LENGTH = 1_500_000;
@@ -409,4 +410,205 @@ export async function getProductCategories(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * Intelligent Related Products & Frequently Bought Together Bundle
+ */
+export async function getProductRecommendations(req, res, next) {
+  try {
+    const { id } = req.params;
+    let currentProduct = null;
+
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      currentProduct = await Product.findById(id);
+    }
+    if (!currentProduct) {
+      currentProduct = await Product.findOne({ slug: id.toLowerCase() });
+    }
+
+    if (!currentProduct) {
+      res.status(404);
+      throw new Error("Product not found");
+    }
+
+    // Fetch candidate pool
+    const candidates = await Product.find({
+      _id: { $ne: currentProduct._id },
+    }).limit(40);
+
+    const currentTags = new Set(
+      (currentProduct.tags || []).map((t) => t.toLowerCase())
+    );
+
+    // Score relevance
+    const scored = candidates.map((cand) => {
+      let score = 0;
+      if (cand.category.toLowerCase() === currentProduct.category.toLowerCase()) {
+        score += 35;
+      }
+      if (cand.brand.toLowerCase() === currentProduct.brand.toLowerCase()) {
+        score += 15;
+      }
+
+      const candTags = (cand.tags || []).map((t) => t.toLowerCase());
+      let tagMatches = 0;
+      for (const t of candTags) {
+        if (currentTags.has(t)) tagMatches++;
+      }
+      score += tagMatches * 15;
+      score += (cand.rating || 0) * 4;
+
+      const priceRatio =
+        Math.min(cand.price, currentProduct.price) /
+        Math.max(cand.price, currentProduct.price);
+      score += priceRatio * 10;
+
+      return { product: cand, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    const related = scored.slice(0, 4).map((s) => s.product);
+
+    // Frequently bought together companion
+    const bundleProduct =
+      scored.find(
+        (s) =>
+          s.product.price <= currentProduct.price * 1.5 &&
+          s.product._id.toString() !== currentProduct._id.toString()
+      )?.product || related[0] || null;
+
+    let bundle = null;
+    if (bundleProduct) {
+      const originalTotal = currentProduct.price + bundleProduct.price;
+      const discountPercent = 10; // 10% bundle discount
+      const bundlePrice = Math.round(originalTotal * 0.9);
+      const savings = originalTotal - bundlePrice;
+
+      bundle = {
+        mainProduct: {
+          _id: currentProduct._id,
+          name: currentProduct.name,
+          price: currentProduct.price,
+          image: currentProduct.image,
+          category: currentProduct.category,
+        },
+        bundleProduct: {
+          _id: bundleProduct._id,
+          name: bundleProduct.name,
+          price: bundleProduct.price,
+          image: bundleProduct.image,
+          category: bundleProduct.category,
+        },
+        discountPercent,
+        bundlePrice,
+        originalTotal,
+        savings,
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        related,
+        bundle,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Personalized & Trending Recommendations for Homepage / User Feed
+ */
+export async function getPersonalizedRecommendations(req, res, next) {
+  try {
+    let preferredCategories = [];
+
+    if (req.user) {
+      const orders = await Order.find({ user: req.user._id })
+        .sort({ createdAt: -1 })
+        .limit(5);
+
+      const catSet = new Set();
+      for (const order of orders) {
+        for (const item of order.orderItems || []) {
+          if (item.category) catSet.add(item.category);
+        }
+      }
+      preferredCategories = Array.from(catSet);
+    }
+
+    let forYouQuery = {};
+    if (preferredCategories.length > 0) {
+      forYouQuery = {
+        category: {
+          $in: preferredCategories.map((c) => new RegExp(`^${c}$`, "i")),
+        },
+      };
+    } else {
+      forYouQuery = { rating: { $gte: 4.6 } };
+    }
+
+    const [forYou, trending, flashDeals] = await Promise.all([
+      Product.find(forYouQuery).sort({ rating: -1, numReviews: -1 }).limit(8),
+      Product.find({}).sort({ numReviews: -1, rating: -1 }).limit(8),
+      Product.find({ isOnSale: true }).sort({ createdAt: -1 }).limit(8),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        forYou: forYou.length > 0 ? forYou : trending.slice(0, 8),
+        trending,
+        flashDeals,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Gemini AI Conversational Shopping Advisor
+ */
+export async function getAIShoppingAdvice(req, res, next) {
+  try {
+    const { query } = req.body;
+    if (!query || typeof query !== "string") {
+      res.status(400);
+      throw new Error("Search or advice query is required");
+    }
+
+    const allProducts = await Product.find(
+      {},
+      "name category brand price rating numReviews tags features description image"
+    );
+
+    const aiResult = await recommendProductsWithAI({
+      query,
+      products: allProducts,
+      userContext: req.user ? { name: req.user.name } : {},
+    });
+
+    const productMap = new Map();
+    allProducts.forEach((p) => productMap.set(p._id.toString(), p));
+
+    const recommendedProducts = (aiResult.productIds || [])
+      .map((id) => productMap.get(id))
+      .filter(Boolean);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        summary: aiResult.summary,
+        products: recommendedProducts,
+        tips: aiResult.tips || [],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 

@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
+import FrequentlyBoughtTogether from "../components/product/FrequentlyBoughtTogether";
 import ProductCard from "../components/product/ProductCard";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -53,6 +54,7 @@ export default function ProductDetails() {
   const [error, setError] = useState("");
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
+  const [bundle, setBundle] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedPulse, setAddedPulse] = useState(false);
@@ -87,15 +89,29 @@ export default function ProductDetails() {
       setQuantity(1);
       setActiveImage(0);
 
-      const relatedRes = await api.get("/api/products", {
-        params: { category: normalized.category, limit: 4, sort: "newest" },
-      });
-      const relatedRows = (relatedRes.data?.data?.products || [])
-        .map(normalizeProduct)
-        .filter((item) => item._id !== normalized._id)
-        .slice(0, 4);
-
-      setRelated(relatedRows);
+      // Intelligent Recommendations (Related products + Bundle pairing)
+      try {
+        const recRes = await api.get(`/api/products/${normalized._id}/recommendations`);
+        const recData = recRes.data?.data;
+        if (recData) {
+          if (Array.isArray(recData.related)) {
+            setRelated(recData.related.map(normalizeProduct));
+          }
+          if (recData.bundle) {
+            setBundle(recData.bundle);
+          }
+        }
+      } catch {
+        // Fallback to simple category matching if recommendations endpoint is pending
+        const relatedRes = await api.get("/api/products", {
+          params: { category: normalized.category, limit: 4, sort: "newest" },
+        });
+        const relatedRows = (relatedRes.data?.data?.products || [])
+          .map(normalizeProduct)
+          .filter((item) => item._id !== normalized._id)
+          .slice(0, 4);
+        setRelated(relatedRows);
+      }
     } catch (err) {
       if (err?.response?.status === 404) {
         setProduct(null);
@@ -322,6 +338,13 @@ export default function ProductDetails() {
           </aside>
         </div>
       </section>
+
+      {/* Frequently Bought Together Bundle */}
+      {bundle && (
+        <div className="container-pad pb-12">
+          <FrequentlyBoughtTogether bundle={bundle} />
+        </div>
+      )}
 
       {/* Customer Reviews & Rating Section */}
       <section className="container-pad pb-16">
@@ -601,8 +624,25 @@ export default function ProductDetails() {
       {/* Related Products */}
       {related.length > 0 && (
         <section className="container-pad pb-20">
-          <h2 className="mb-6 text-2xl font-black">Related products</h2>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">{related.map((item) => (<ProductCard key={item._id} product={item} />))}</div>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-600 dark:text-brand-300">
+                You May Also Like
+              </p>
+              <h2 className="mt-1 text-2xl font-black sm:text-3xl">Related Products</h2>
+            </div>
+            <Link
+              to={`/products?category=${encodeURIComponent(product.category)}`}
+              className="text-sm font-bold text-brand-600 transition hover:underline dark:text-brand-300"
+            >
+              Explore more {product.category} →
+            </Link>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            {related.map((item) => (
+              <ProductCard key={item._id} product={item} />
+            ))}
+          </div>
         </section>
       )}
     </PageTransition>
