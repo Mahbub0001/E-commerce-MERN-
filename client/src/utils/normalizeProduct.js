@@ -3,11 +3,14 @@ export function normalizeProduct(product) {
 
   const oldPrice = product.oldPrice && product.oldPrice > 0 ? product.oldPrice : product.price;
   const countInStock = product.countInStock ?? product.stock ?? 0;
+  const reviewsList = Array.isArray(product.reviews) ? product.reviews : [];
+  const numReviews = typeof product.numReviews === "number" ? product.numReviews : reviewsList.length;
 
   return {
     ...product,
-    reviews: product.reviews ?? product.numReviews ?? 0,
-    numReviews: product.numReviews ?? product.reviews ?? 0,
+    reviewsList,
+    reviews: numReviews,
+    numReviews,
     stock: countInStock,
     countInStock,
     oldPrice,
