@@ -10,6 +10,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
+  Star,
   Sun,
   Users,
   X,
@@ -31,6 +32,7 @@ const navSections = [
     links: [
       { label: "Products", to: "/admin/products", icon: Boxes },
       { label: "Orders", to: "/admin/orders", icon: ShoppingBag },
+      { label: "Reviews", to: "/admin/reviews", icon: Star },
       { label: "Users", to: "/admin/users", icon: Users },
     ],
   },

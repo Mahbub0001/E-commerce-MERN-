@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import AdminDashboard from "../pages/AdminDashboard";
 import AdminOrders from "../pages/AdminOrders";
 import AdminProducts from "../pages/AdminProducts";
+import AdminReviews from "../pages/AdminReviews";
 import AdminUsers from "../pages/AdminUsers";
 import Cart from "../pages/Cart";
 import Checkout from "../pages/Checkout";
@@ -45,6 +46,7 @@ export default function AppRoutes() {
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
         <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+        <Route path="/admin/reviews" element={<AdminRoute><AdminReviews /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
