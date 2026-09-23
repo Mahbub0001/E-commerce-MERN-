@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminShell from "../components/admin/AdminShell";
 import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
+import Pagination from "../components/common/Pagination";
 import api from "../services/api";
 import {
   compressImageForUpload,
@@ -57,6 +58,9 @@ export default function AdminProducts() {
     fetchProducts();
   }, []);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   const categories = useMemo(() => ["All", ...new Set(products.map((p) => p.category))], [products]);
 
   const filtered = useMemo(() => products.filter((p) => {
@@ -64,6 +68,16 @@ export default function AdminProducts() {
     const matchesCategory = category === "All" || p.category === category;
     return matchesQuery && matchesCategory;
   }), [products, query, category]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, category]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   function openCreate() {
     setEditing(null);
@@ -207,13 +221,13 @@ export default function AdminProducts() {
           ) : (
             <>
               <div className="grid gap-3 md:hidden">
-                {filtered.map((product) => {
+                {paginatedProducts.map((product) => {
                   const stock = product.countInStock ?? 0;
                   const badge = stock === 0 ? ["Out", "bg-rose-100 text-rose-700"] : stock <= 10 ? ["Low", "bg-amber-100 text-amber-700"] : ["In Stock", "bg-emerald-100 text-emerald-700"];
                   return (
                     <article key={product._id} className="rounded-2xl border bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/60">
                       <div className="flex items-start gap-3">
-                        <img src={product.image} alt={product.name} className="h-14 w-14 rounded-xl object-cover" />
+                        <img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-14 w-14 rounded-xl object-cover" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-bold">{product.name}</p>
                           <p className="truncate text-xs text-slate-500">{product.slug}</p>
@@ -248,12 +262,12 @@ export default function AdminProducts() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((product) => {
+                  {paginatedProducts.map((product) => {
                     const stock = product.countInStock ?? 0;
                     const badge = stock === 0 ? ["Out", "bg-rose-100 text-rose-700"] : stock <= 10 ? ["Low", "bg-amber-100 text-amber-700"] : ["In Stock", "bg-emerald-100 text-emerald-700"];
                     return (
                       <tr key={product._id} className="border-t dark:border-white/10">
-                        <td className="py-3"><div className="flex items-center gap-3"><img src={product.image} alt={product.name} className="h-12 w-12 rounded-xl object-cover" /><div><p className="font-bold">{product.name}</p><p className="text-xs text-slate-500">{product.slug}</p></div></div></td>
+                        <td className="py-3"><div className="flex items-center gap-3"><img src={product.image} alt={product.name} loading="lazy" decoding="async" className="h-12 w-12 rounded-xl object-cover" /><div><p className="font-bold">{product.name}</p><p className="text-xs text-slate-500">{product.slug}</p></div></div></td>
                         <td className="py-3">{product.category}</td>
                         <td className="py-3 font-bold">{formatCurrency(product.price)}</td>
                         <td className="py-3">{stock}</td>
@@ -265,6 +279,15 @@ export default function AdminProducts() {
                 </tbody>
               </table>
             </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={filtered.length}
+              onPageChange={setCurrentPage}
+              className="mt-5 border-t border-slate-100 pt-4 dark:border-white/10"
+            />
             </>
           )}
         </div>

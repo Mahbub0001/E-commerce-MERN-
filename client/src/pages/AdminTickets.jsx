@@ -22,6 +22,7 @@ import AdminKpiCard from "../components/admin/AdminKpiCard";
 import AdminShell from "../components/admin/AdminShell";
 import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
+import Pagination from "../components/common/Pagination";
 import api from "../services/api";
 
 function getPriorityBadge(priority) {
@@ -179,6 +180,19 @@ export default function AdminTickets() {
       return matchQuery && matchStatus && matchPriority && matchCategory;
     });
   }, [tickets, searchQuery, statusFilter, priorityFilter, categoryFilter]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, priorityFilter, categoryFilter]);
+
+  const totalPages = Math.ceil(filteredTickets.length / pageSize) || 1;
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTickets.slice(start, start + pageSize);
+  }, [filteredTickets, currentPage, pageSize]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -350,7 +364,7 @@ export default function AdminTickets() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-medium">
-                  {filteredTickets.map((ticket) => (
+                  {paginatedTickets.map((ticket) => (
                     <tr
                       key={ticket._id}
                       className="transition hover:bg-slate-50/60 dark:hover:bg-white/[0.02]"
@@ -427,6 +441,15 @@ export default function AdminTickets() {
                 </tbody>
               </table>
             </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={filteredTickets.length}
+              onPageChange={setCurrentPage}
+              className="mt-4 border-t border-slate-100 p-4 pt-3 dark:border-white/10"
+            />
           </div>
         )}
 

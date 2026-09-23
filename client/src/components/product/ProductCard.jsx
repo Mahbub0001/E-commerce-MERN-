@@ -22,7 +22,13 @@ export default function ProductCard({ product, onQuickView }) {
     >
       <Link to={`/products/${product._id}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
+          <img
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+          />
           {discount > 0 && (
             <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-brand-700 backdrop-blur">
               {discount}% OFF

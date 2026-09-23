@@ -19,6 +19,7 @@ import AdminKpiCard from "../components/admin/AdminKpiCard";
 import AdminShell from "../components/admin/AdminShell";
 import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
+import Pagination from "../components/common/Pagination";
 import api from "../services/api";
 
 function getSentimentBadge(sentiment, score) {
@@ -104,6 +105,19 @@ export default function AdminReviews() {
       return matchQuery && matchFilter;
     });
   }, [reviews, searchQuery, selectedFilter]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedFilter]);
+
+  const totalPages = Math.ceil(filteredReviews.length / pageSize) || 1;
+  const paginatedReviews = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredReviews.slice(start, start + pageSize);
+  }, [filteredReviews, currentPage, pageSize]);
 
   // Aggregate Stats
   const stats = useMemo(() => {
@@ -278,7 +292,8 @@ export default function AdminReviews() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-slate-200/80 text-slate-400 dark:border-slate-800">
@@ -292,7 +307,7 @@ export default function AdminReviews() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {filteredReviews.map((rev) => {
+                  {paginatedReviews.map((rev) => {
                     const formattedDate = rev.createdAt
                       ? new Date(rev.createdAt).toLocaleDateString(undefined, {
                           year: "numeric",
@@ -407,7 +422,17 @@ export default function AdminReviews() {
                 </tbody>
               </table>
             </div>
-          )}
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={filteredReviews.length}
+              onPageChange={setCurrentPage}
+              className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10"
+            />
+          </>
+        )}
         </div>
 
         {/* Delete Confirmation Modal */}

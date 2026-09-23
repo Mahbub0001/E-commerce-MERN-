@@ -239,7 +239,13 @@ export default function ProductDetails() {
             <div className="grid grid-cols-4 gap-3">
               {gallery.map((image, index) => (
                 <button key={`${image}-${index}`} type="button" onClick={() => setActiveImage(index)} className={`glass-panel overflow-hidden rounded-xl border-2 transition ${activeImage === index ? "border-brand-500" : "border-transparent"}`}>
-                  <img src={image} alt={`${product.name} preview ${index + 1}`} className="h-20 w-full object-cover" />
+                  <img
+                    src={image}
+                    alt={`${product.name} preview ${index + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-20 w-full object-cover"
+                  />
                 </button>
               ))}
             </div>
