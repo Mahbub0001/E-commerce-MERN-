@@ -5,6 +5,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminOrders from "../pages/AdminOrders";
 import AdminProducts from "../pages/AdminProducts";
 import AdminReviews from "../pages/AdminReviews";
+import AdminTickets from "../pages/AdminTickets";
 import AdminUsers from "../pages/AdminUsers";
 import Cart from "../pages/Cart";
 import Checkout from "../pages/Checkout";
@@ -47,6 +48,7 @@ export default function AppRoutes() {
         <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
         <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
         <Route path="/admin/reviews" element={<AdminRoute><AdminReviews /></AdminRoute>} />
+        <Route path="/admin/tickets" element={<AdminRoute><AdminTickets /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

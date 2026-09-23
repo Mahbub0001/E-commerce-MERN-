@@ -5,6 +5,7 @@ import {
   Boxes,
   CreditCard,
   DollarSign,
+  LifeBuoy,
   Loader2,
   Package,
   Plus,
@@ -34,6 +35,7 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [ticketStats, setTicketStats] = useState({ open: 0, highPriority: 0 });
 
   async function fetchDashboard(isRefresh = false) {
     if (isRefresh) {
@@ -44,15 +46,17 @@ export default function AdminDashboard() {
     setError("");
 
     try {
-      const [productsRes, ordersRes, usersRes] = await Promise.all([
+      const [productsRes, ordersRes, usersRes, ticketsStatsRes] = await Promise.all([
         api.get("/api/products", { params: { limit: 300 } }),
         api.get("/api/orders"),
         api.get("/api/users"),
+        api.get("/api/tickets/stats").catch(() => ({ data: { data: { open: 0, highPriority: 0 } } })),
       ]);
 
       setProducts(productsRes.data?.data?.products || []);
       setOrders(ordersRes.data?.data || []);
       setUsers(usersRes.data?.data || []);
+      setTicketStats(ticketsStatsRes.data?.data || { open: 0, highPriority: 0 });
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load admin dashboard data.");
     } finally {
@@ -305,6 +309,34 @@ export default function AdminDashboard() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition shadow-sm"
                 >
                   <span>Manage Orders</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            )}
+
+            {/* Support Tickets Alert Banner */}
+            {ticketStats.open > 0 && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[1.8rem] bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-transparent p-5 border border-rose-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white font-black shadow-md">
+                    <LifeBuoy size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                      Customer Support: {ticketStats.open} open {ticketStats.open === 1 ? "ticket" : "tickets"} awaiting response
+                      {ticketStats.highPriority > 0 && ` (${ticketStats.highPriority} high priority)`}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Automated NovaBot escalations and customer issues require admin review.
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  to="/admin/tickets"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-black text-white hover:bg-rose-700 transition shadow-sm"
+                >
+                  <span>View Tickets</span>
                   <ArrowRight size={14} />
                 </Link>
               </div>
