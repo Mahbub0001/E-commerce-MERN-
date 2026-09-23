@@ -69,13 +69,45 @@ function extractJSON(rawText) {
  */
 export async function analyzeReviewWithAI(comment, rating) {
   const numericRating = Number(rating) || 5;
+  const lowerComment = (comment || "").toLowerCase();
+
+  // Negative cues (English, Banglish, Bengali)
+  const negativeRegex =
+    /(faltu|baje|bekar|joghonno|kharap|nosto|vua|fraud|scam|fake|churi|dhoka|cheat|terrible|worst|horrible|disaster|poor|bad|useless|damaged|broken|rubbish|waste|don't buy|never buy|ফালতু|বাজে|খারাপ|নষ্ট|ভুয়া|জঘন্য|প্রতারণা|ধোঁকা|কাজ করে না)/i;
+
+  // Positive cues (English, Banglish, Bengali)
+  const positiveRegex =
+    /(valo|bhalo|osadharon|darun|khub valo|best|good|great|awesome|excellent|amazing|love|perfect|smooth|super|sundor|topnotch|ভালো|দারুণ|অসাধারণ|সেরা|সুন্দর)/i;
+
+  let calculatedSentiment = "Neutral";
+  let calculatedScore = 50;
+
+  if (negativeRegex.test(lowerComment)) {
+    calculatedSentiment = "Negative";
+    calculatedScore = numericRating <= 2 ? 15 : 28;
+  } else if (positiveRegex.test(lowerComment)) {
+    calculatedSentiment = "Positive";
+    calculatedScore = numericRating >= 4 ? 90 : 75;
+  } else {
+    // Rely purely on star rating if text is neutral or ambiguous
+    if (numericRating >= 4) {
+      calculatedSentiment = "Positive";
+      calculatedScore = numericRating === 5 ? 95 : 80;
+    } else if (numericRating <= 2) {
+      calculatedSentiment = "Negative";
+      calculatedScore = numericRating === 1 ? 15 : 30;
+    } else {
+      calculatedSentiment = "Neutral";
+      calculatedScore = 50;
+    }
+  }
 
   // Fallback defaults
   const fallback = {
-    sentiment: numericRating >= 4 ? "Positive" : numericRating === 3 ? "Neutral" : "Negative",
-    sentimentScore: numericRating >= 4 ? 85 : numericRating === 3 ? 50 : 25,
+    sentiment: calculatedSentiment,
+    sentimentScore: calculatedScore,
     isSpam: false,
-    isFlagged: false,
+    isFlagged: calculatedSentiment === "Negative" && numericRating <= 2,
     flagReason: null,
   };
 
@@ -95,7 +127,17 @@ export async function analyzeReviewWithAI(comment, rating) {
 Customer Rating (1 to 5 stars): ${numericRating}
 Customer Comment: "${comment}"
 
-Evaluate sentiment (Positive, Neutral, Negative), sentimentScore (0 to 100), whether it is spam/advertisement, and whether it contains toxic hate speech or irrelevant text.
+IMPORTANT: Pay special attention to Bengali / Banglish words (e.g., "faltu", "baje", "kharap", "nosto", "valo", "darun").
+Even if a customer accidentally selects 3 or 4 stars, if the comment text says negative things like "faltu", "baje", or "waste", the sentiment MUST be "Negative".
+Conversely, if the comment praises the product ("valo", "darun", "great"), the sentiment MUST be "Positive".
+
+Evaluate:
+- sentiment: "Positive" | "Neutral" | "Negative"
+- sentimentScore: number from 0 to 100
+- isSpam: boolean
+- isFlagged: boolean
+- flagReason: string or null
+
 Respond ONLY with a JSON object in this exact schema:
 {
   "sentiment": "Positive" | "Neutral" | "Negative",
