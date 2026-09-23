@@ -277,7 +277,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h4 className="text-sm font-black text-slate-900 dark:text-white">
-                      Action Required: {pendingOrders.length} orders need processing
+                      Action Required: {pendingOrders.length} {pendingOrders.length === 1 ? "order needs" : "orders need"} processing
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Review customer shipping addresses and mark ready packages as Shipped.
