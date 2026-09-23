@@ -8,6 +8,7 @@ import {
   getFeaturedProducts,
   getProductById,
   getProductBySlug,
+  getProductCategories,
   getProducts,
   searchProducts,
   updateProduct,
@@ -17,6 +18,7 @@ import { adminOnly, protect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/", getProducts);
+router.get("/categories", getProductCategories);
 router.get("/featured", getFeaturedProducts);
 router.get("/search", searchProducts);
 router.get("/slug/:slug", getProductBySlug);

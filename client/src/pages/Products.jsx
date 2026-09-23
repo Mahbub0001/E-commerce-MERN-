@@ -30,6 +30,7 @@ const fallbackCategories = [
   "Kitchen & Gourmet",
   "Books & Stationery",
 ];
+const DEFAULT_MAX_PRICE = 3000;
 
 function SkeletonGrid() {
   return (
@@ -49,25 +50,38 @@ function SkeletonGrid() {
   );
 }
 
-function FilterPanel({ filters, setFilters, clearFilters, categories, maxPrice }) {
+function FilterPanel({
+  filters,
+  setFilters,
+  onCategoryChange,
+  setPagination,
+  clearFilters,
+  categories,
+  maxPrice,
+}) {
   return (
     <div className="space-y-7">
       <div>
         <p className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">Category</p>
         <div className="grid gap-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setFilters((current) => ({ ...current, category }))}
-              className={`rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${
-                filters.category === category
-                  ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-                  : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-white/10"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+          {categories.map((category) => {
+            const isSelected =
+              (filters.category || "All").trim().toLowerCase() === category.trim().toLowerCase();
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => onCategoryChange(category)}
+                className={`rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${
+                  isSelected
+                    ? "bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950"
+                    : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-white/10"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -80,8 +94,13 @@ function FilterPanel({ filters, setFilters, clearFilters, categories, maxPrice }
           type="range"
           min="0"
           max={maxPrice}
+          step="25"
           value={filters.priceRange}
-          onChange={(event) => setFilters((current) => ({ ...current, priceRange: Number(event.target.value) }))}
+          onChange={(event) => {
+            const priceRange = Number(event.target.value);
+            setFilters((current) => ({ ...current, priceRange }));
+            setPagination((prev) => ({ ...prev, page: 1 }));
+          }}
           className="w-full accent-brand-600"
         />
         <div className="mt-2 flex justify-between text-xs font-bold text-slate-500">
@@ -94,15 +113,27 @@ function FilterPanel({ filters, setFilters, clearFilters, categories, maxPrice }
         <p className="mb-3 text-sm font-black uppercase tracking-[0.18em] text-slate-500">Rating</p>
         <div className="grid gap-2">
           <button
-            onClick={() => setFilters((current) => ({ ...current, rating: 0 }))}
-            className={`rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${filters.rating === 0 ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "bg-white dark:bg-slate-950"}`}
+            type="button"
+            onClick={() => {
+              setFilters((current) => ({ ...current, rating: 0 }));
+              setPagination((prev) => ({ ...prev, page: 1 }));
+            }}
+            className={`rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${
+              filters.rating === 0
+                ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+                : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-white/10"
+            }`}
           >
             All ratings
           </button>
           {ratingOptions.map((rating) => (
             <button
               key={rating}
-              onClick={() => setFilters((current) => ({ ...current, rating }))}
+              type="button"
+              onClick={() => {
+                setFilters((current) => ({ ...current, rating }));
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
               className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition ${
                 filters.rating === rating
                   ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
@@ -131,14 +162,44 @@ export default function Products() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickView, setQuickView] = useState(null);
   const [products, setProducts] = useState([]);
+  const [availableCategories, setAvailableCategories] = useState(fallbackCategories);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0, limit: 12 });
   const [filters, setFilters] = useState({
     search: queryFromUrl,
     category: categoryFromUrl,
-    priceRange: 1500,
+    priceRange: DEFAULT_MAX_PRICE,
     rating: 0,
     sort: "newest",
   });
+
+  // Fetch all unique categories from backend so sidebar persistently shows all store categories
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCategories() {
+      try {
+        const { data } = await api.get("/api/products/categories");
+        if (isMounted && Array.isArray(data?.data) && data.data.length > 0) {
+          const map = new Map();
+          map.set("all", "All");
+          data.data.forEach((c) => {
+            if (c) map.set(c.toLowerCase(), c);
+          });
+          fallbackCategories.forEach((c) => {
+            if (c && !map.has(c.toLowerCase())) {
+              map.set(c.toLowerCase(), c);
+            }
+          });
+          setAvailableCategories(Array.from(map.values()));
+        }
+      } catch {
+        // Fallback categories remain active
+      }
+    }
+    loadCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function fetchProducts() {
     setLoading(true);
@@ -150,17 +211,30 @@ export default function Products() {
         sort: filters.sort,
       };
 
-      if (filters.search.trim()) params.keyword = filters.search.trim();
-      if (filters.category !== "All") params.category = filters.category;
-      if (filters.priceRange > 0) params.maxPrice = filters.priceRange;
-      if (filters.rating > 0) params.rating = filters.rating;
+      if (filters.search && filters.search.trim()) {
+        params.keyword = filters.search.trim();
+      }
+      if (filters.category && filters.category.trim().toLowerCase() !== "all") {
+        params.category = filters.category.trim();
+      }
+      if (filters.priceRange > 0 && filters.priceRange < DEFAULT_MAX_PRICE) {
+        params.maxPrice = filters.priceRange;
+      }
+      if (filters.rating > 0) {
+        params.rating = filters.rating;
+      }
 
       const { data } = await api.get("/api/products", { params });
       const payload = data?.data || {};
       const rows = (payload.products || []).map(normalizeProduct);
       setProducts(rows);
 
-      const serverPagination = payload.pagination || { page: 1, pages: 1, total: rows.length, limit: pagination.limit };
+      const serverPagination = payload.pagination || {
+        page: 1,
+        pages: 1,
+        total: rows.length,
+        limit: pagination.limit,
+      };
       setPagination((prev) => ({ ...prev, ...serverPagination }));
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load products.");
@@ -171,7 +245,15 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
-  }, [pagination.page, pagination.limit, filters.search, filters.category, filters.priceRange, filters.rating, filters.sort]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    filters.search,
+    filters.category,
+    filters.priceRange,
+    filters.rating,
+    filters.sort,
+  ]);
 
   useEffect(() => {
     setFilters((current) => ({
@@ -182,20 +264,44 @@ export default function Products() {
     setPagination((current) => ({ ...current, page: 1 }));
   }, [queryFromUrl, categoryFromUrl]);
 
-  const maxProductPrice = useMemo(() => {
-    if (products.length === 0) return 1500;
-    return Math.max(...products.map((product) => product.price), 100);
-  }, [products]);
+  function handleCategoryChange(category) {
+    setFilters((current) => ({ ...current, category }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (!category || category === "All") {
+        next.delete("category");
+      } else {
+        next.set("category", category);
+      }
+      return next;
+    });
+  }
 
-  const categories = useMemo(() => {
-    const dynamic = new Set(products.map((product) => product.category).filter(Boolean));
-    if (dynamic.size === 0) return fallbackCategories;
-    return ["All", ...Array.from(dynamic)];
-  }, [products]);
+  function handleSearchChange(next) {
+    setFilters((current) => ({ ...current, search: next }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setSearchParams((prev) => {
+      const nextParams = new URLSearchParams(prev);
+      if (next.trim()) {
+        nextParams.set("q", next.trim());
+      } else {
+        nextParams.delete("q");
+      }
+      return nextParams;
+    });
+  }
 
   function clearFilters() {
-    setFilters({ search: "", category: "All", priceRange: maxProductPrice, rating: 0, sort: "newest" });
+    setFilters({
+      search: "",
+      category: "All",
+      priceRange: DEFAULT_MAX_PRICE,
+      rating: 0,
+      sort: "newest",
+    });
     setPagination((prev) => ({ ...prev, page: 1 }));
+    setSearchParams({});
   }
 
   return (
@@ -213,20 +319,18 @@ export default function Products() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
                 value={filters.search}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setFilters((current) => ({ ...current, search: next }));
-                  setPagination((prev) => ({ ...prev, page: 1 }));
-                  if (next.trim()) setSearchParams({ q: next });
-                  else setSearchParams({});
-                }}
+                onChange={(event) => handleSearchChange(event.target.value)}
                 placeholder="Search by product name"
                 className="h-14 w-full rounded-2xl border bg-white pl-12 pr-4 outline-none transition focus:border-brand-500 dark:border-white/10 dark:bg-slate-900"
               />
             </label>
             <select
               value={filters.sort}
-              onChange={(event) => setFilters((current) => ({ ...current, sort: event.target.value }))}
+              onChange={(event) => {
+                const nextSort = event.target.value;
+                setFilters((current) => ({ ...current, sort: nextSort }));
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
               className="h-14 rounded-2xl border bg-white px-4 text-sm font-black outline-none dark:border-white/10 dark:bg-slate-900"
             >
               {sortOptions.map((option) => (
@@ -255,7 +359,15 @@ export default function Products() {
                 <Filter className="text-brand-600" />
                 <h2 className="text-xl font-black">Filters</h2>
               </div>
-              <FilterPanel filters={filters} setFilters={setFilters} clearFilters={clearFilters} categories={categories} maxPrice={maxProductPrice} />
+              <FilterPanel
+                filters={filters}
+                setFilters={setFilters}
+                onCategoryChange={handleCategoryChange}
+                setPagination={setPagination}
+                clearFilters={clearFilters}
+                categories={availableCategories}
+                maxPrice={DEFAULT_MAX_PRICE}
+              />
             </div>
           </aside>
 
@@ -322,7 +434,15 @@ export default function Products() {
                   <X size={20} />
                 </button>
               </div>
-              <FilterPanel filters={filters} setFilters={setFilters} clearFilters={clearFilters} categories={categories} maxPrice={maxProductPrice} />
+              <FilterPanel
+                filters={filters}
+                setFilters={setFilters}
+                onCategoryChange={handleCategoryChange}
+                setPagination={setPagination}
+                clearFilters={clearFilters}
+                categories={availableCategories}
+                maxPrice={DEFAULT_MAX_PRICE}
+              />
               <Button onClick={() => setDrawerOpen(false)} className="mt-5 w-full">
                 Show {pagination.total || products.length} products
               </Button>

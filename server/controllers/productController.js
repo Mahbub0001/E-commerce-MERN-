@@ -25,8 +25,11 @@ export async function getProducts(req, res, next) {
       filters.name = { $regex: req.query.keyword, $options: "i" };
     }
 
-    if (req.query.category) {
-      filters.category = req.query.category;
+    if (req.query.category && req.query.category.trim().toLowerCase() !== "all") {
+      filters.category = {
+        $regex: `^\\s*${req.query.category.trim().replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\s*$`,
+        $options: "i",
+      };
     }
 
     if (req.query.minPrice || req.query.maxPrice) {
@@ -371,6 +374,36 @@ export async function deleteProductReview(req, res, next) {
       success: true,
       message: "Review removed successfully",
       data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getProductCategories(req, res, next) {
+  try {
+    const rawCategories = await Product.distinct("category");
+    const categoryMap = new Map();
+
+    for (const cat of rawCategories) {
+      if (!cat || typeof cat !== "string") continue;
+      const trimmed = cat.trim();
+      if (!trimmed) continue;
+      const lower = trimmed.toLowerCase();
+      if (!categoryMap.has(lower)) {
+        // Keep a well-formatted title casing
+        const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        categoryMap.set(lower, formatted);
+      }
+    }
+
+    const categories = Array.from(categoryMap.values()).sort((a, b) =>
+      a.localeCompare(b)
+    );
+
+    res.status(200).json({
+      success: true,
+      data: categories,
     });
   } catch (error) {
     next(error);
