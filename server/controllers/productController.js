@@ -209,3 +209,127 @@ export async function deleteProduct(req, res, next) {
     next(error);
   }
 }
+
+export async function createProductReview(req, res, next) {
+  try {
+    const { rating, comment } = req.body;
+    const numericRating = Number(rating);
+
+    if (!numericRating || numericRating < 1 || numericRating > 5) {
+      res.status(400);
+      throw new Error("Rating must be a number between 1 and 5");
+    }
+
+    if (!comment || !comment.trim()) {
+      res.status(400);
+      throw new Error("Review comment is required");
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      res.status(404);
+      throw new Error("Product not found");
+    }
+
+    const alreadyReviewed = product.reviews.find(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReviewed) {
+      res.status(400);
+      throw new Error("You have already reviewed this product");
+    }
+
+    const review = {
+      user: req.user._id,
+      name: req.user.name || "Customer",
+      rating: numericRating,
+      comment: comment.trim(),
+    };
+
+    product.reviews.push(review);
+    product.numReviews = product.reviews.length;
+    product.rating =
+      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      product.reviews.length;
+
+    await product.save();
+    res.status(201).json({
+      success: true,
+      message: "Review added successfully",
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAllReviews(req, res, next) {
+  try {
+    const products = await Product.find({ "reviews.0": { $exists: true } })
+      .select("name image slug reviews")
+      .lean();
+
+    const allReviews = [];
+    for (const prod of products) {
+      for (const rev of prod.reviews || []) {
+        allReviews.push({
+          _id: rev._id,
+          productId: prod._id,
+          productName: prod.name,
+          productImage: prod.image,
+          productSlug: prod.slug,
+          userId: rev.user,
+          name: rev.name,
+          rating: rev.rating,
+          comment: rev.comment,
+          createdAt: rev.createdAt,
+        });
+      }
+    }
+
+    allReviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.status(200).json({ success: true, data: allReviews });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteProductReview(req, res, next) {
+  try {
+    const { id, reviewId } = req.params;
+    const product = await Product.findById(id);
+
+    if (!product) {
+      res.status(404);
+      throw new Error("Product not found");
+    }
+
+    const reviewIndex = product.reviews.findIndex(
+      (r) => r._id.toString() === reviewId
+    );
+
+    if (reviewIndex === -1) {
+      res.status(404);
+      throw new Error("Review not found");
+    }
+
+    product.reviews.splice(reviewIndex, 1);
+    product.numReviews = product.reviews.length;
+    product.rating = product.reviews.length
+      ? product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+        product.reviews.length
+      : 0;
+
+    await product.save();
+    res.status(200).json({
+      success: true,
+      message: "Review removed successfully",
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
