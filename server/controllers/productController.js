@@ -1,4 +1,5 @@
 import Product from "../models/Product.js";
+import { analyzeReviewWithAI } from "../services/aiService.js";
 
 /** Base64 image strings above this often exceed Vercel's ~4.5MB request body limit. */
 const MAX_IMAGE_FIELD_LENGTH = 1_500_000;
@@ -240,11 +241,19 @@ export async function createProductReview(req, res, next) {
       throw new Error("You have already reviewed this product");
     }
 
+    // Run AI review moderation and sentiment analysis
+    const aiAnalysis = await analyzeReviewWithAI(comment.trim(), numericRating);
+
     const review = {
       user: req.user._id,
       name: req.user.name || "Customer",
       rating: numericRating,
       comment: comment.trim(),
+      sentiment: aiAnalysis.sentiment,
+      sentimentScore: aiAnalysis.sentimentScore,
+      isSpam: aiAnalysis.isSpam,
+      isFlagged: aiAnalysis.isFlagged,
+      flagReason: aiAnalysis.flagReason,
     };
 
     product.reviews.push(review);
@@ -283,6 +292,11 @@ export async function getAllReviews(req, res, next) {
           name: rev.name,
           rating: rev.rating,
           comment: rev.comment,
+          sentiment: rev.sentiment || (rev.rating >= 4 ? "Positive" : rev.rating === 3 ? "Neutral" : "Negative"),
+          sentimentScore: rev.sentimentScore || (rev.rating >= 4 ? 85 : 50),
+          isSpam: Boolean(rev.isSpam),
+          isFlagged: Boolean(rev.isFlagged || rev.isSpam),
+          flagReason: rev.flagReason || null,
           createdAt: rev.createdAt,
         });
       }

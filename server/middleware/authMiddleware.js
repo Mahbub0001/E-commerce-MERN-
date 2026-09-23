@@ -40,3 +40,20 @@ export function adminOnly(req, res, next) {
   }
   next();
 }
+
+export async function optionalAuth(req, res, next) {
+  let token;
+  if (req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+  if (!token) {
+    return next();
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.userId).select("-password");
+  } catch {
+    // Continue as guest
+  }
+  next();
+}

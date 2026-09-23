@@ -24,6 +24,29 @@ const reviewSchema = new mongoose.Schema(
       trim: true,
       maxlength: 1000,
     },
+    sentiment: {
+      type: String,
+      enum: ["Positive", "Neutral", "Negative"],
+      default: "Neutral",
+    },
+    sentimentScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 50,
+    },
+    isSpam: {
+      type: Boolean,
+      default: false,
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    flagReason: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
