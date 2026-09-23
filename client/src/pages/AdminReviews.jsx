@@ -1,10 +1,13 @@
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Filter,
   Loader2,
   MessageSquare,
   Search,
+  ShieldAlert,
+  Sparkles,
   Star,
   Trash2,
   X,
@@ -17,12 +20,37 @@ import Button from "../components/common/Button";
 import PageTransition from "../components/common/PageTransition";
 import api from "../services/api";
 
+function getSentimentBadge(sentiment, score) {
+  if (sentiment === "Positive") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        Positive {score ? `${score}%` : ""}
+      </span>
+    );
+  }
+  if (sentiment === "Negative") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+        Negative {score ? `${score}%` : ""}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+      <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+      Neutral
+    </span>
+  );
+}
+
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRating, setSelectedRating] = useState("all");
+  const [selectedFilter, setSelectedFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
 
@@ -65,28 +93,35 @@ export default function AdminReviews() {
         (rev.name || "").toLowerCase().includes(q) ||
         (rev.comment || "").toLowerCase().includes(q);
 
-      const matchRating =
-        selectedRating === "all" || String(rev.rating) === String(selectedRating);
+      let matchFilter = true;
+      if (selectedFilter === "flagged") {
+        matchFilter = Boolean(rev.isFlagged || rev.isSpam);
+      } else if (selectedFilter !== "all") {
+        matchFilter = String(rev.rating) === String(selectedFilter);
+      }
 
-      return matchQuery && matchRating;
+      return matchQuery && matchFilter;
     });
-  }, [reviews, searchQuery, selectedRating]);
+  }, [reviews, searchQuery, selectedFilter]);
 
   // Aggregate Stats
   const stats = useMemo(() => {
     const total = reviews.length;
-    if (!total) return { total: 0, avg: "0.0", fiveStars: 0, lowStars: 0 };
+    if (!total)
+      return { total: 0, avg: "0.0", fiveStars: 0, flaggedCount: 0, positiveCount: 0 };
 
     const sum = reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
     const avg = (sum / total).toFixed(1);
     const fiveStars = reviews.filter((r) => Number(r.rating) === 5).length;
-    const lowStars = reviews.filter((r) => Number(r.rating) <= 2).length;
+    const flaggedCount = reviews.filter((r) => r.isFlagged || r.isSpam).length;
+    const positiveCount = reviews.filter((r) => r.sentiment === "Positive" || r.rating >= 4).length;
 
     return {
       total,
       avg,
       fiveStarsPercent: Math.round((fiveStars / total) * 100),
-      lowStars,
+      positivePercent: Math.round((positiveCount / total) * 100),
+      flaggedCount,
     };
   }, [reviews]);
 
@@ -94,7 +129,7 @@ export default function AdminReviews() {
     <PageTransition>
       <AdminShell
         title="Customer Reviews"
-        subtitle="Manage product feedback, inspect customer ratings, and moderate reviews."
+        subtitle="AI sentiment analysis, automated spam detection, and review moderation."
       >
         {/* KPI Metrics Row */}
         <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -111,7 +146,7 @@ export default function AdminReviews() {
           <AdminKpiCard
             title="Store Average Rating"
             value={`${stats.avg} ★`}
-            change="+0.2 this month"
+            change={`${stats.positivePercent}% Positive`}
             isPositive={Number(stats.avg) >= 4.0}
             icon={Star}
             tone="green"
@@ -123,19 +158,19 @@ export default function AdminReviews() {
             value={`${stats.fiveStarsPercent || 0}%`}
             change="Top Tier Quality"
             isPositive={true}
-            icon={Star}
+            icon={Sparkles}
             tone="sky"
             subtitle="Highest satisfaction ratio"
           />
 
           <AdminKpiCard
-            title="Critical Reviews (≤2★)"
-            value={stats.lowStars || 0}
-            change={stats.lowStars > 0 ? "Requires Attention" : "None"}
-            isPositive={stats.lowStars === 0}
-            icon={AlertCircle}
+            title="AI Flagged / Spam"
+            value={stats.flaggedCount || 0}
+            change={stats.flaggedCount > 0 ? "Action Required" : "Clean"}
+            isPositive={stats.flaggedCount === 0}
+            icon={ShieldAlert}
             tone="amber"
-            subtitle="Low rating resolution"
+            subtitle="Automated Gemini moderation"
           />
         </div>
 
@@ -165,17 +200,40 @@ export default function AdminReviews() {
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
             <Filter size={16} className="text-slate-400 shrink-0 ml-1" />
-            {["all", "5", "4", "3", "2", "1"].map((rt) => (
+            <button
+              onClick={() => setSelectedFilter("all")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 ${
+                selectedFilter === "all"
+                  ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              }`}
+            >
+              All Reviews
+            </button>
+
+            <button
+              onClick={() => setSelectedFilter("flagged")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
+                selectedFilter === "flagged"
+                  ? "bg-rose-600 text-white shadow-md shadow-rose-500/20"
+                  : "bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/60"
+              }`}
+            >
+              <AlertTriangle size={13} />
+              <span>Flagged / Spam ({stats.flaggedCount})</span>
+            </button>
+
+            {["5", "4", "3", "2", "1"].map((rt) => (
               <button
                 key={rt}
-                onClick={() => setSelectedRating(rt)}
+                onClick={() => setSelectedFilter(rt)}
                 className={`rounded-xl px-3 py-1.5 text-xs font-bold transition shrink-0 ${
-                  selectedRating === rt
+                  selectedFilter === rt
                     ? "bg-brand-600 text-white shadow-md shadow-brand-500/20"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                 }`}
               >
-                {rt === "all" ? "All Ratings" : `${rt} ★`}
+                {rt} ★
               </button>
             ))}
           </div>
@@ -203,7 +261,7 @@ export default function AdminReviews() {
               <MessageSquare size={36} className="mx-auto mb-2 opacity-50" />
               <p className="font-bold text-slate-700 dark:text-slate-300">No reviews found</p>
               <p className="text-xs mt-1">
-                {searchQuery || selectedRating !== "all"
+                {searchQuery || selectedFilter !== "all"
                   ? "Try resetting your search filters."
                   : "No customer reviews have been published yet."}
               </p>
@@ -216,6 +274,7 @@ export default function AdminReviews() {
                     <th className="pb-3.5 font-semibold">Product</th>
                     <th className="pb-3.5 font-semibold">Customer</th>
                     <th className="pb-3.5 font-semibold">Rating</th>
+                    <th className="pb-3.5 font-semibold">AI Sentiment & Flags</th>
                     <th className="pb-3.5 font-semibold">Comment</th>
                     <th className="pb-3.5 font-semibold">Date</th>
                     <th className="pb-3.5 font-semibold text-right">Action</th>
@@ -231,10 +290,14 @@ export default function AdminReviews() {
                         })
                       : "N/A";
 
+                    const isSuspicious = rev.isFlagged || rev.isSpam;
+
                     return (
                       <tr
                         key={rev._id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition"
+                        className={`hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition ${
+                          isSuspicious ? "bg-rose-50/20 dark:bg-rose-950/10" : ""
+                        }`}
                       >
                         {/* Product info */}
                         <td className="py-4">
@@ -283,6 +346,22 @@ export default function AdminReviews() {
                             <span className="ml-1 text-xs font-black text-slate-700 dark:text-slate-300">
                               {rev.rating}
                             </span>
+                          </div>
+                        </td>
+
+                        {/* AI Sentiment & Flag Badge */}
+                        <td className="py-4">
+                          <div className="flex flex-col items-start gap-1">
+                            {getSentimentBadge(rev.sentiment, rev.sentimentScore)}
+                            {isSuspicious && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300/40"
+                                title={rev.flagReason || "Flagged as spam"}
+                              >
+                                <AlertTriangle size={11} />
+                                {rev.flagReason || "Spam Detected"}
+                              </span>
+                            )}
                           </div>
                         </td>
 
