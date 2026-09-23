@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ShoppingBag,
   Sparkles,
+  Star,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -85,6 +86,20 @@ export default function AdminDashboard() {
   const recentOrders = useMemo(() => {
     return orders.slice(0, 6);
   }, [orders]);
+
+  const reviewStats = useMemo(() => {
+    let count = 0;
+    let sum = 0;
+    for (const p of products) {
+      const num = p.numReviews || (p.reviews?.length) || 0;
+      if (num > 0) {
+        count += num;
+        sum += (p.rating || 0) * num;
+      }
+    }
+    const avg = count > 0 ? (sum / count).toFixed(1) : "5.0";
+    return { count, avg };
+  }, [products]);
 
   // Timeline Revenue Data for Recharts AreaChart
   const revenueTimeline = useMemo(() => {
@@ -294,6 +309,31 @@ export default function AdminDashboard() {
                 </Link>
               </div>
             )}
+
+            {/* Customer Satisfaction & Reviews Banner */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[1.8rem] bg-gradient-to-r from-brand-500/10 via-fuchsia-500/10 to-transparent p-5 border border-brand-500/20">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-fuchsia-600 text-white font-black shadow-md">
+                  <Star size={20} fill="currentColor" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                    Store Feedback: {reviewStats.avg} ★ ({reviewStats.count} customer {reviewStats.count === 1 ? "review" : "reviews"})
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Average sentiment across catalog products with active moderation.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                to="/admin/reviews"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition shadow-sm"
+              >
+                <span>Manage Reviews</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
 
             {/* Charts Section */}
             <div className="grid gap-6 xl:grid-cols-3">
