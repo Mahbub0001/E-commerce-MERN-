@@ -5,6 +5,7 @@ import {
   Filter,
   Loader2,
   MessageSquare,
+  RefreshCw,
   Search,
   ShieldAlert,
   Sparkles,
@@ -130,6 +131,16 @@ export default function AdminReviews() {
       <AdminShell
         title="Customer Reviews"
         subtitle="AI sentiment analysis, automated spam detection, and review moderation."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchReviews}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </Button>
+        }
       >
         {/* KPI Metrics Row */}
         <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

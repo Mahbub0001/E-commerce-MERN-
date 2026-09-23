@@ -282,6 +282,36 @@ export async function getAllReviews(req, res, next) {
     const allReviews = [];
     for (const prod of products) {
       for (const rev of prod.reviews || []) {
+        let sentiment = rev.sentiment;
+        let sentimentScore = rev.sentimentScore;
+        let isSpam = rev.isSpam;
+        let isFlagged = rev.isFlagged;
+        let flagReason = rev.flagReason;
+
+        // Dynamic recheck: Ensure sentiment accurately reflects current AI rules/cues
+        const recheck = await analyzeReviewWithAI(rev.comment, rev.rating);
+        if (!sentiment || sentiment !== recheck.sentiment || isSpam !== recheck.isSpam) {
+          sentiment = recheck.sentiment;
+          sentimentScore = recheck.sentimentScore;
+          isSpam = recheck.isSpam;
+          isFlagged = recheck.isFlagged;
+          flagReason = recheck.flagReason;
+
+          // Asynchronously update in DB to permanently persist the correct sentiment
+          Product.updateOne(
+            { _id: prod._id, "reviews._id": rev._id },
+            {
+              $set: {
+                "reviews.$.sentiment": sentiment,
+                "reviews.$.sentimentScore": sentimentScore,
+                "reviews.$.isSpam": isSpam,
+                "reviews.$.isFlagged": isFlagged,
+                "reviews.$.flagReason": flagReason,
+              },
+            }
+          ).catch((e) => console.warn("Failed to persist rechecked review sentiment:", e.message));
+        }
+
         allReviews.push({
           _id: rev._id,
           productId: prod._id,
@@ -292,11 +322,11 @@ export async function getAllReviews(req, res, next) {
           name: rev.name,
           rating: rev.rating,
           comment: rev.comment,
-          sentiment: rev.sentiment || (rev.rating >= 4 ? "Positive" : rev.rating === 3 ? "Neutral" : "Negative"),
-          sentimentScore: rev.sentimentScore || (rev.rating >= 4 ? 85 : 50),
-          isSpam: Boolean(rev.isSpam),
-          isFlagged: Boolean(rev.isFlagged || rev.isSpam),
-          flagReason: rev.flagReason || null,
+          sentiment,
+          sentimentScore: sentimentScore ?? 50,
+          isSpam: Boolean(isSpam),
+          isFlagged: Boolean(isFlagged || isSpam),
+          flagReason: flagReason || null,
           createdAt: rev.createdAt,
         });
       }
