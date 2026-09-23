@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
   ChevronRight,
+  LifeBuoy,
   MessageCircle,
   Minus,
   Search,
@@ -23,7 +24,7 @@ const starterPrompts = [
   "Lowest price product",
   "Best gaming item",
   "Best picks under 500",
-  "Best rated product",
+  "Report an issue or refund",
 ];
 
 const needMap = [
@@ -195,6 +196,34 @@ function ProductMiniCard({ product, onAddToCart }) {
   );
 }
 
+function TicketMiniCard({ ticket }) {
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-50/70 p-3.5 text-slate-800 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-100">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-xl bg-emerald-600 text-white shadow-sm">
+            <LifeBuoy size={15} />
+          </span>
+          <div>
+            <span className="text-xs font-black tracking-wide text-emerald-800 dark:text-emerald-200">
+              Support Ticket #{ticket.ticketId}
+            </span>
+            <p className="text-[11px] font-semibold text-emerald-700/80 dark:text-emerald-300/80">
+              Category: {ticket.category}
+            </p>
+          </div>
+        </div>
+        <span className="rounded-full bg-emerald-600/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-300">
+          {ticket.status || "Open"}
+        </span>
+      </div>
+      <p className="mt-2 text-xs font-medium text-emerald-900/80 dark:text-emerald-200/80">
+        Our customer support team has been notified. You can track this ticket with support ID <strong className="font-bold">{ticket.ticketId}</strong>.
+      </p>
+    </div>
+  );
+}
+
 function TypingDots() {
   return (
     <div className="flex items-center gap-1 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-white/10">
@@ -356,15 +385,42 @@ export default function ProductAssistant() {
     };
   }
 
-  function sendMessage(text = input) {
+  async function sendMessage(text = input) {
     const cleanText = text.trim();
     if (!cleanText || loading) return;
 
     setInput("");
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text: cleanText }]);
+    const userMsg = { id: crypto.randomUUID(), role: "user", text: cleanText };
+    setMessages((current) => [...current, userMsg]);
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const history = messages.slice(-6).map((m) => ({ role: m.role, text: m.text }));
+      const { data } = await api.post("/api/assistant/chat", {
+        message: cleanText,
+        history,
+      });
+
+      if (data?.success && data?.data?.reply) {
+        const botData = data.data;
+        const normalizedProds = (botData.products || []).map(normalizeProduct);
+        setMessages((current) => [
+          ...current,
+          {
+            id: crypto.randomUUID(),
+            role: "bot",
+            text: botData.reply,
+            products: normalizedProds,
+            ticket: botData.ticket || null,
+            order: botData.order || null,
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
+      throw new Error("Assistant API response invalid");
+    } catch {
+      // Graceful offline or local fallback
       const reply = buildReply(cleanText);
       setMessages((current) => [
         ...current,
@@ -376,7 +432,7 @@ export default function ProductAssistant() {
         },
       ]);
       setLoading(false);
-    }, 420);
+    }
   }
 
   function deleteMessage(messageId) {
@@ -465,6 +521,7 @@ export default function ProductAssistant() {
                         ))}
                       </div>
                     )}
+                    {message.ticket && <TicketMiniCard ticket={message.ticket} />}
                   </div>
                 </div>
               ))}
