@@ -274,8 +274,19 @@ export async function processAssistantChat({ message, history = [], user = null 
   }
 
   // Check categories
-  const categories = ["Electronics", "Fashion", "Gaming", "Fitness", "Home", "Accessories"];
-  const matchedCat = categories.find((cat) => lower.includes(cat.toLowerCase()));
+  const categories = [
+    "Electronics",
+    "Fashion",
+    "Gaming",
+    "Fitness",
+    "Home",
+    "Accessories",
+    "Beauty & Skincare",
+    "Audio & Studio",
+    "Kitchen & Gourmet",
+    "Books & Stationery",
+  ];
+  const matchedCat = categories.find((cat) => lower.includes(cat.toLowerCase().split("&")[0].trim()));
   if (matchedCat) {
     query.category = matchedCat;
   }

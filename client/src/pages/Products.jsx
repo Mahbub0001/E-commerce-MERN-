@@ -17,7 +17,19 @@ const sortOptions = [
 ];
 
 const ratingOptions = [4.5, 4, 3.5, 3];
-const fallbackCategories = ["All", "Electronics", "Fashion", "Fitness", "Gaming", "Home", "Accessories"];
+const fallbackCategories = [
+  "All",
+  "Electronics",
+  "Fashion",
+  "Fitness",
+  "Gaming",
+  "Home",
+  "Accessories",
+  "Beauty & Skincare",
+  "Audio & Studio",
+  "Kitchen & Gourmet",
+  "Books & Stationery",
+];
 
 function SkeletonGrid() {
   return (
@@ -113,6 +125,7 @@ function FilterPanel({ filters, setFilters, clearFilters, categories, maxPrice }
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryFromUrl = searchParams.get("q") || "";
+  const categoryFromUrl = searchParams.get("category") || "All";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -121,7 +134,7 @@ export default function Products() {
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0, limit: 12 });
   const [filters, setFilters] = useState({
     search: queryFromUrl,
-    category: "All",
+    category: categoryFromUrl,
     priceRange: 1500,
     rating: 0,
     sort: "newest",
@@ -161,9 +174,13 @@ export default function Products() {
   }, [pagination.page, pagination.limit, filters.search, filters.category, filters.priceRange, filters.rating, filters.sort]);
 
   useEffect(() => {
-    setFilters((current) => ({ ...current, search: queryFromUrl }));
+    setFilters((current) => ({
+      ...current,
+      search: queryFromUrl,
+      category: categoryFromUrl || "All",
+    }));
     setPagination((current) => ({ ...current, page: 1 }));
-  }, [queryFromUrl]);
+  }, [queryFromUrl, categoryFromUrl]);
 
   const maxProductPrice = useMemo(() => {
     if (products.length === 0) return 1500;

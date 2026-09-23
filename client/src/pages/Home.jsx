@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  BookOpen,
   Dumbbell,
   Gamepad2,
   Gem,
@@ -13,6 +14,7 @@ import {
   Sparkles,
   Timer,
   Truck,
+  Utensils,
   Watch,
   Zap,
 } from "lucide-react";
@@ -35,8 +37,12 @@ const categories = [
   { title: "Fashion", icon: Shirt, gradient: "from-fuchsia-500 to-rose-500" },
   { title: "Fitness", icon: Dumbbell, gradient: "from-emerald-500 to-teal-600" },
   { title: "Gaming", icon: Gamepad2, gradient: "from-violet-500 to-indigo-600" },
-  { title: "Home Gadgets", icon: HomeIcon, gradient: "from-orange-500 to-amber-500" },
+  { title: "Home", icon: HomeIcon, gradient: "from-orange-500 to-amber-500" },
   { title: "Accessories", icon: Watch, gradient: "from-slate-700 to-slate-950" },
+  { title: "Beauty & Skincare", icon: Sparkles, gradient: "from-pink-500 to-rose-600" },
+  { title: "Audio & Studio", icon: Headphones, gradient: "from-purple-600 to-blue-600" },
+  { title: "Kitchen & Gourmet", icon: Utensils, gradient: "from-red-500 to-orange-500" },
+  { title: "Books & Stationery", icon: BookOpen, gradient: "from-teal-600 to-emerald-600" },
 ];
 
 const reasons = [
@@ -167,7 +173,10 @@ export default function Home() {
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category, index) => (
             <Reveal key={category.title} delay={index * 0.04}>
-              <Link to="/products" className="group glass-panel flex items-center gap-5 rounded-[1.75rem] p-6 transition hover:-translate-y-1 hover:shadow-premium">
+              <Link
+                to={`/products?category=${encodeURIComponent(category.title)}`}
+                className="group glass-panel flex items-center gap-5 rounded-[1.75rem] p-6 transition hover:-translate-y-1 hover:shadow-premium"
+              >
                 <span className={`grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br ${category.gradient} text-white shadow-glow`}>
                   <category.icon size={28} />
                 </span>
